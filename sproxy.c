@@ -1,46 +1,55 @@
-#include <unistd.h> 
 #include <stdio.h> 
 #include <sys/socket.h> 
-#include <stdlib.h> 
-#include <netinet/in.h> 
+#include <arpa/inet.h> 
+#include <unistd.h> 
 #include <string.h> 
+#include <stdlib.h>
 
 /*
- * Checks for a value read failure when recv'ing from socket.
+ * Removes the newline character from a given string and returns a newly allocated string
  */
-void valReadError(int valRead)
+char* removeNewline(char *s)
 {
-    if(valRead < 0)
+    //Check if string is valid
+    if(s[0] != '\0')
     {
-        fprintf(stderr, "Failed to read from socket. Terminating.\n");
-        exit(1);
-    }
-}
+        //Allocate space for new string
+        char *n = malloc( strlen( s ? s : "\n" ) );
 
-/*
- * Resets the buffer for the incoming message
- */
-void resetBuffer(char* buffer)
-{
-    int i;
-    for(i = 0; i < 1025; i++)
-    {
-        buffer[i] = '\0';
+        //Copy string
+        if(s)
+        {
+            strcpy( n, s );
+        }
+
+        if(n[strlen(n)-1] == '\n')
+        {
+            n[strlen(n)-1]='\0';
+        }
+
+        return n;
     }
+
+    return s;
 }
 
 int main(int argc, char *argv[]) 
 { 
-    int serverFd; 
-    int newSocket; 
-    int valRead; 
-    struct sockaddr_in address; 
+    int serverSock = 0, telnetSock = 0;
+    int maxLen = 256;
+    int valRead = 0; 
     int opt = 1; 
-    int addrLen = sizeof(address); 
-    char buffer[1025] = {0};
-    uint32_t messageLen;
-    int len; 
-       
+    struct sockaddr_in telnetAddr;
+    int telnetAddrLen = sizeof(telnetAddr);
+    struct sockaddr_in serverAddr;
+    int serverAddrLen = sizeof(serverAddr);
+    fd_set readfds;
+    struct timeval tv;
+    char telnetBuff[256] = {0};
+    char *tempTelnetBuff = malloc(256 + 1);
+    char serverBuff[256] = {0};
+    char *tempServerBuff = malloc(256 + 1);
+
     //Check if arguments are valid
     if(argc != 2)
     {
@@ -49,80 +58,156 @@ int main(int argc, char *argv[])
     }
 
     //Create socket file descriptor
-    if ((serverFd = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+    if ((telnetSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
         fprintf(stderr, "Socket failed to connect. Terminating.\n");
         return 1;
     } 
        
     //Attach socket to port
-    if (setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
+    if (setsockopt(telnetSock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
     { 
         fprintf(stderr, "Failed setting sock options. Terminating.\n");
-    return 1;
+    	return 1;
     }
 
-    address.sin_family = AF_INET; 
-    address.sin_addr.s_addr = INADDR_ANY; 
-    address.sin_port = htons(atoi(argv[1])); 
+    telnetAddr.sin_family = AF_INET; 
+    telnetAddr.sin_addr.s_addr = INADDR_ANY; 
+    telnetAddr.sin_port = htons(atoi(argv[1])); 
        
     //Bind ip to socket
-    if(bind(serverFd, (struct sockaddr *)&address, sizeof(address)) < 0) 
+    if(bind(telnetSock, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) 
     {
         fprintf(stderr, "Binding failed. Terminating.\n");
         return 1;
     }
     
     //Enable listening on given socket
-    if (listen(serverFd, 3) < 0) 
+    if (listen(telnetSock, 3) < 0) 
     { 
         fprintf(stderr, "Listening failed. Terminating.\n"); 
         exit(EXIT_FAILURE); 
     }
 
     //Accept the client
-    if ((newSocket = accept(serverFd, (struct sockaddr *)&address, (socklen_t*)&addrLen))<0) 
+    if ((telnetSock = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
         fprintf(stderr, "Accept failed. Terminating.\n");
         return 1;
     }
 
-    //While socket is open and sending data
-    while((valRead = recv(newSocket, buffer, 1024, 0)) > 0)
-    {
-        //Convert to host-readable language
-        valReadError(valRead);
+    //Create initial socket
+    if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+    { 
+        printf("Failed to create socket. Terminating.\n"); 
+        return 1; 
+    } 
+   
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(23); 
 
-	printf("%s", buffer);
-        
-	resetBuffer(buffer);
-        //If length of message requires two recv's
-        /*if(len > 536)
-        {
-            //Read first part and print
-            valRead = recv(newSocket, buffer, 536, 0);
-            valReadError(valRead);
-            printf("%s", buffer); 
-            resetBuffer(buffer);
-
-            //Read second part and print
-            valRead = recv(newSocket, buffer, len - 536 + 1, 0);
-            valReadError(valRead);
-            printf("%s", buffer);
-            resetBuffer(buffer);
-            
-        }
-        else if(len > 0)
-        {
-            //Read message and print
-            valRead = recv(newSocket, buffer, len + 1, 0);
-            valReadError(valRead);
-            printf("%s", buffer); 
-            resetBuffer(buffer);
-        }*/
-        //Reset message length
-        messageLen = 0;
+    //Bind IP to socket
+    if(inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr) <=0 )  
+    { 
+        printf("Invalid Server Address. Terminating.\n"); 
+        return 1;
+    } 
+   
+    //Connect to server
+    if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
+    { 
+        printf("Connection Failed \n"); 
+        return 1; 
     }
+
+    //While user is still inputting data
+    while(1)
+    {
+        //Clear the set
+        int n = 0;
+        FD_ZERO(&readfds);
+
+        //Add descriptors
+        FD_SET(telnetSock, &readfds);
+        FD_SET(serverSock, &readfds);
+
+        //Find larger file descriptor
+        if(telnetSock > serverSock)
+        {
+            n = telnetSock + 1;
+        }
+        else
+        {
+            n = serverSock + 1;
+        }
+
+        //Wait for sockets to receive data
+        tv.tv_sec = 10;
+        tv.tv_usec = 500000;
+
+        //Select returns one of the sockets or timeout
+        int rv = select(n, &readfds, NULL, NULL, &tv);
+
+        if (rv == -1)
+        {
+            fprintf(stderr, "Select() function failed.");
+	    break;
+        }
+        else if(rv == 0)
+        {
+            printf("Timeout occurred! No data after 10.5 seconds.");
+            break;
+        }
+        else
+        {
+            //One or both descrptors have data
+            if(FD_ISSET(telnetSock, &readfds))
+            {
+                recv(telnetSock, telnetBuff, maxLen, 0);
+                send(serverSock, telnetBuff, strlen(telnetBuff), 0);
+		printf("%s", telnetBuff);
+            }
+            if(FD_ISSET(serverSock, &readfds))
+            {
+                recv(serverSock, serverBuff, maxLen, 0);
+                send(telnetSock, serverBuff, strlen(serverBuff), 0);
+		printf("%s", serverBuff);
+            }
+        }
+        /*
+	//Convert input to network-readable language
+        uint32_t temp = htonl(strlen(removeNewline(telnetBuff)));
+        
+        //Checks if string is valid
+        if(strlen(removeNewline(telnetBuff)) > 0)
+        {
+            //Send the first packet holding the size of the coming message in bytes
+            send(serverSock, &temp, 4, 0);
+
+            //Sanitize input
+            char* newBuff = removeNewline(telnetBuff);
+
+            //Send the actual message
+            send(serverSock, newBuff, strlen(newBuff), 0); 
+
+            //Check if packet was valid
+            if(valRead < 0)
+            {
+                fprintf(stderr, "Failed to read from sock. Terminating.\n");
+                return 1;
+            }
+
+            //Sanitizr telnetBuff
+            int i;
+            for(i = 0; i < 1025; i++)
+            {
+                telnetBuff[i] = '\0';
+            }
+        }*/
+    }
+
+    //Close the socket
+    close(serverSock);
 
     return 0; 
 } 
