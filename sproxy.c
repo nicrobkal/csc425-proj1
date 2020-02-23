@@ -88,26 +88,27 @@ int main(int argc, char *argv[])
     }
 
     //While socket is open and sending data
-    while((valRead = recv(newSocket, &messageLen, 4, 0)) > 0)
+    while((valRead = recv(newSocket, buffer, 1024, 0)) > 0)
     {
         //Convert to host-readable language
         valReadError(valRead);
 
-        len = ntohl(messageLen);
-
+	printf("%s", buffer);
+        
+	resetBuffer(buffer);
         //If length of message requires two recv's
-        if(len > 536)
+        /*if(len > 536)
         {
             //Read first part and print
             valRead = recv(newSocket, buffer, 536, 0);
             valReadError(valRead);
-            printf("%d\n%s", len, buffer); 
+            printf("%s", buffer); 
             resetBuffer(buffer);
 
             //Read second part and print
             valRead = recv(newSocket, buffer, len - 536 + 1, 0);
             valReadError(valRead);
-            printf("%s\n", buffer);
+            printf("%s", buffer);
             resetBuffer(buffer);
             
         }
@@ -116,9 +117,9 @@ int main(int argc, char *argv[])
             //Read message and print
             valRead = recv(newSocket, buffer, len + 1, 0);
             valReadError(valRead);
-            printf("%d\n%s\n", len, buffer); 
+            printf("%s", buffer); 
             resetBuffer(buffer);
-        }
+        }*/
         //Reset message length
         messageLen = 0;
     }
