@@ -92,6 +92,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    fprintf(stderr, "Connected to cproxy!");
+
     //Create socket file descriptor
     if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
@@ -130,6 +132,8 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Telnet accept failed. Terminating.\n");
         return 1;
     }
+
+    fprintf(stderr, "Connected to something else!");
 
     //While user is still inputting data
     while(1)
