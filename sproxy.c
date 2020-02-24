@@ -88,16 +88,16 @@ int main(int argc, char *argv[])
     //Accept the client
     if ((telnetSock = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
-        fprintf(stderr, "Accept failed. Terminating.\n");
+        fprintf(stderr, "Server accept failed. Terminating.\n");
         return 1;
     }
 
-    serverAddr.sin_family = AF_INET; 
-    serverAddr.sin_addr.s_addr = INADDR_ANY; 
-    serverAddr.sin_port = htons(23);
+    telnetAddr.sin_family = AF_INET; 
+    telnetAddr.sin_addr.s_addr = INADDR_ANY; 
+    telnetAddr.sin_port = htons(23);
 
     //Accept the client
-    if ((serverSock = accept(telnetSock, (struct sockaddr *)&serverAddr, (socklen_t*)&serverAddrLen))<0) 
+    if ((serverSock = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
         fprintf(stderr, "Accept failed. Terminating.\n");
         return 1;
