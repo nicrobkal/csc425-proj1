@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     serverAddr.sin_port = htonl(23);
   
     //Bind ip to socket
-    if(bind(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
+    if (bind(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
     {
         perror("bind");
         return 1;
@@ -125,6 +125,8 @@ int main(int argc, char *argv[])
         fprintf(stderr, "Listening failed. Terminating.\n"); 
         exit(EXIT_FAILURE); 
     }
+
+    fprintf(stderr, "Waiting on something to accept...");
 
     //Accept the client
     if ((serverSock = accept(serverSock, (struct sockaddr *)&serverAddr, (socklen_t*)&serverAddrLen))<0) 
