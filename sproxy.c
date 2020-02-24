@@ -174,6 +174,15 @@ int main(int argc, char *argv[])
 		printf("%s", serverBuff);
             }
         }
+
+        //Sanitize Buffer
+	int i;
+	for(i = 0; i < 1025; i++)
+	{
+	    telnetBuff[i] = '\0';
+	    serverBuff[i] = '\0';
+	}
+
         /*
 	//Convert input to network-readable language
         uint32_t temp = htonl(strlen(removeNewline(telnetBuff)));
