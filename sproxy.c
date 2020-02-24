@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
     }
 
     serverAddr.sin_family = AF_INET; 
-    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
     serverAddr.sin_port = htonl(23);
   
     //Bind ip to socket
