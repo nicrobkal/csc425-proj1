@@ -46,9 +46,7 @@ int main(int argc, char *argv[])
     fd_set readfds;
     struct timeval tv;
     char telnetBuff[256] = {0};
-    char *tempTelnetBuff = malloc(256 + 1);
     char serverBuff[256] = {0};
-    char *tempServerBuff = malloc(256 + 1);
 
     //Check if arguments are valid
     if(argc != 2)
@@ -165,13 +163,13 @@ int main(int argc, char *argv[])
             {
                 recv(telnetSock, telnetBuff, maxLen, 0);
                 send(serverSock, telnetBuff, strlen(telnetBuff), 0);
-		printf("%s", telnetBuff);
+		//printf("%s", telnetBuff);
             }
             if(FD_ISSET(serverSock, &readfds))
             {
                 recv(serverSock, serverBuff, maxLen, 0);
                 send(telnetSock, serverBuff, strlen(serverBuff), 0);
-		printf("%s", serverBuff);
+		//printf("%s", serverBuff);
             }
         }
 
@@ -215,7 +213,8 @@ int main(int argc, char *argv[])
         }*/
     }
 
-    //Close the socket
+    //Close the sockets
+    close(telnetSock);
     close(serverSock);
 
     return 0; 
