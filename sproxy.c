@@ -108,12 +108,12 @@ int main(int argc, char *argv[])
 
     serverAddr.sin_family = AF_INET; 
     serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 
-    serverAddr.sin_port = htons(23); 
+    serverAddr.sin_port = htons(23);
        
     //Bind ip to socket
     if(bind(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
     {
-        fprintf(stderr, "Telnet binding failed. Terminating.\n");
+        perror("bind");
         return 1;
     }
     
