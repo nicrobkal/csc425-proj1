@@ -199,37 +199,36 @@ int main(int argc, char *argv[])
         }
     }
 
-        /*
+    /*
 	//Convert input to network-readable language
-        uint32_t temp = htonl(strlen(removeNewline(telnetBuff)));
-        
-        //Checks if string is valid
-        if(strlen(removeNewline(telnetBuff)) > 0)
+    uint32_t temp = htonl(strlen(removeNewline(telnetBuff)));
+    
+    //Checks if string is valid
+    if(strlen(removeNewline(telnetBuff)) > 0)
+    {
+        //Send the first packet holding the size of the coming message in bytes
+        send(serverSock, &temp, 4, 0);
+
+        //Sanitize input
+        char* newBuff = removeNewline(telnetBuff);
+
+        //Send the actual message
+        send(serverSock, newBuff, strlen(newBuff), 0); 
+
+        //Check if packet was valid
+        if(valRead < 0)
         {
-            //Send the first packet holding the size of the coming message in bytes
-            send(serverSock, &temp, 4, 0);
+            fprintf(stderr, "Failed to read from sock. Terminating.\n");
+            return 1;
+        }
 
-            //Sanitize input
-            char* newBuff = removeNewline(telnetBuff);
-
-            //Send the actual message
-            send(serverSock, newBuff, strlen(newBuff), 0); 
-
-            //Check if packet was valid
-            if(valRead < 0)
-            {
-                fprintf(stderr, "Failed to read from sock. Terminating.\n");
-                return 1;
-            }
-
-            //Sanitizr telnetBuff
-            int i;
-            for(i = 0; i < 1025; i++)
-            {
-                telnetBuff[i] = '\0';
-            }
-        }*/
-    }
+        //Sanitizr telnetBuff
+        int i;
+        for(i = 0; i < 1025; i++)
+        {
+            telnetBuff[i] = '\0';
+        }
+    }*/
 
     //Close the sockets
     close(telnetSock);
