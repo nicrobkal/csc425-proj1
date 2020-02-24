@@ -37,12 +37,10 @@ int main(int argc, char *argv[])
 { 
     int serverSock = 0, telnetSock = 0;
     int maxLen = 256;
-    int valRead = 0; 
     int opt = 1; 
     struct sockaddr_in telnetAddr;
     int telnetAddrLen = sizeof(telnetAddr);
     struct sockaddr_in serverAddr;
-    int serverAddrLen = sizeof(serverAddr);
     fd_set readfds;
     struct timeval tv;
     char telnetBuff[256] = {0};
@@ -148,13 +146,17 @@ int main(int argc, char *argv[])
 
         if (rv == -1)
         {
-            fprintf(stderr, "Select() function failed.");
-	    break;
+            fprintf(stderr, "Select() function failed.\n");
+	    close(telnetSock);
+	    close(serverSock);
+ 	    return 1;
         }
         else if(rv == 0)
         {
-            printf("Timeout occurred! No data after 10.5 seconds.");
-            break;
+            printf("Timeout occurred! No data after 10.5 seconds.\n");
+            close(telnetSock);
+	    close(serverSock);
+	    return 1;
         }
         else
         {
@@ -163,13 +165,13 @@ int main(int argc, char *argv[])
             {
                 recv(telnetSock, telnetBuff, maxLen, 0);
                 send(serverSock, telnetBuff, strlen(telnetBuff), 0);
-		//printf("%s", telnetBuff);
+		printf("%s", telnetBuff);
             }
             if(FD_ISSET(serverSock, &readfds))
             {
                 recv(serverSock, serverBuff, maxLen, 0);
                 send(telnetSock, serverBuff, strlen(serverBuff), 0);
-		//printf("%s", serverBuff);
+		printf("%s", serverBuff);
             }
         }
 
