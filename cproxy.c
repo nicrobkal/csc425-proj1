@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
     }
 
     //Accept the client
-    if ((telnetSock = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)sizeof(telnetAddr)))<0) 
+    if ((telnetSock = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)sizeof(telnetAddr)+1))<0) 
     { 
         fprintf(stderr, "Accept failed. Terminating.\n");
         return 1;
