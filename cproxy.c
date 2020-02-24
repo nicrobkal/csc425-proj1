@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
     //Connect to server
     if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
     { 
-        printf("connect"); \
+        perror("connect");
         return 1; 
     }
 
