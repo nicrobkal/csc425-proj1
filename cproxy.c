@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
     int maxLen = 256;
     int opt = 1; 
     struct sockaddr_in telnetAddr;
+    int telnetAddrLen = sizeof(telnetAddr);
     struct sockaddr_in serverAddr;
     fd_set readfds;
     struct timeval tv;
@@ -85,7 +86,7 @@ int main(int argc, char *argv[])
     }
 
     //Accept the client
-    if ((telnetSock = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)sizeof(telnetAddr)+1))<0) 
+    if ((telnetSock = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
         fprintf(stderr, "Accept failed. Terminating.\n");
         return 1;
