@@ -35,12 +35,12 @@ char* removeNewline(char *s)
 
 int main(int argc, char *argv[]) 
 { 
-    int serverSock = 0, telnetSock = 0;
+    int masterSocket = 0, serverSock = 0;
     int maxLen = 256;
     int opt = 1; 
-    struct sockaddr_in telnetAddr;
+    struct sockaddr_in telnetAddr = {0};
     int telnetAddrLen = sizeof(telnetAddr);
-    struct sockaddr_in serverAddr;
+    struct sockaddr_in serverAddr = {0};
     int serverAddrLen = sizeof(serverAddr);
     fd_set readfds;
     char telnetBuff[1025] = {0};
@@ -54,14 +54,14 @@ int main(int argc, char *argv[])
     }
 
     //Create socket file descriptor
-    if ((telnetSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+    if ((masterSocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
         fprintf(stderr, "Socket failed to connect. Terminating.\n");
         return 1;
     } 
        
     //Attach socket to port
-    if (setsockopt(telnetSock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
+    if (setsockopt(masterSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
     { 
         fprintf(stderr, "Failed setting sock options. Terminating.\n");
     	return 1;
@@ -72,21 +72,21 @@ int main(int argc, char *argv[])
     telnetAddr.sin_port = htons(atoi(argv[1])); 
        
     //Bind ip to socket
-    if(bind(telnetSock, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) 
+    if(bind(masterSocket, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) 
     {
         fprintf(stderr, "Server binding failed. Terminating.\n");
         return 1;
     }
     
     //Enable listening on given socket
-    if (listen(telnetSock, 3) < 0) 
+    if (listen(masterSocket, 3) < 0) 
     { 
         fprintf(stderr, "Listening failed. Terminating.\n"); 
         exit(EXIT_FAILURE); 
     }
 
     //Accept the client
-    if ((telnetSock = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
+    if ((masterSocket = accept(masterSocket, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
         fprintf(stderr, "Server accept failed. Terminating.\n");
         return 1;
@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
     //Accept the client
     if ((serverSock = accept(serverSock, (struct sockaddr *)&serverAddr, (socklen_t*)&serverAddrLen))<0) 
     { 
-        fprintf(stderr, "Server accept failed. Terminating.\n");
+        fprintf(stderr, "Telnet accept failed. Terminating.\n");
         return 1;
     }
 
@@ -139,13 +139,13 @@ int main(int argc, char *argv[])
         FD_ZERO(&readfds);
 
         //Add descriptors
-        FD_SET(telnetSock, &readfds);
+        FD_SET(masterSocket, &readfds);
         FD_SET(serverSock, &readfds);
 
         //Find larger file descriptor
-        if(telnetSock > serverSock)
+        if(masterSocket > serverSock)
         {
-            n = telnetSock + 1;
+            n = masterSocket + 1;
         }
         else
         {
@@ -158,30 +158,30 @@ int main(int argc, char *argv[])
         if (rv == -1)
         {
             fprintf(stderr, "Select() function failed.\n");
-            close(telnetSock);
+            close(masterSocket);
             close(serverSock);
             return 1;
         }
         else if(rv == 0)
         {
             printf("Timeout occurred! No data after 10.5 seconds.\n");
-            close(telnetSock);
+            close(masterSocket);
             close(serverSock);
             return 1;
         }
         else
         {
             //One or both descrptors have data
-            if(FD_ISSET(telnetSock, &readfds))
+            if(FD_ISSET(masterSocket, &readfds))
             {
-                recv(telnetSock, telnetBuff, maxLen, 0);
+                recv(masterSocket, telnetBuff, maxLen, 0);
                 send(serverSock, telnetBuff, strlen(telnetBuff), 0);
                 printf("%s", telnetBuff);
             }
             if(FD_ISSET(serverSock, &readfds))
             {
                 recv(serverSock, serverBuff, maxLen, 0);
-                send(telnetSock, serverBuff, strlen(serverBuff), 0);
+                send(masterSocket, serverBuff, strlen(serverBuff), 0);
                 printf("%s", serverBuff);
             }
         }
@@ -227,7 +227,7 @@ int main(int argc, char *argv[])
     }*/
 
     //Close the sockets
-    close(telnetSock);
+    close(masterSocket);
     close(serverSock);
 
     return 0; 
