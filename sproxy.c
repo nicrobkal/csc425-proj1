@@ -94,48 +94,31 @@ int main(int argc, char *argv[])
 
     fprintf(stderr, "Connected to cproxy!");
 
-    //Create socket file descriptor
-    if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+        //Create initial socket
+    if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
     { 
-        fprintf(stderr, "Socket failed to connect. Terminating.\n");
+        printf("Failed to create socket. Terminating.\n"); 
+        return 1; 
+    } 
+   
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(23); 
+
+    //Bind IP to socket
+    if(inet_pton(AF_INET, argv[2], &serverAddr.sin_addr) <=0 )  
+    { 
+        printf("Invalid Server Address. Terminating.\n"); 
         return 1;
     } 
-       
-    //Attach socket to port
-    if (setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
+   
+    //Connect to server
+    if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
     { 
-        fprintf(stderr, "Failed setting sock options. Terminating.\n");
-    	return 1;
+        printf("Connection Failed \n"); 
+        return 1; 
     }
 
-    serverAddr.sin_family = AF_INET; 
-    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    serverAddr.sin_port = htonl(23);
-  
-    //Bind ip to socket
-    if (bind(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
-    {
-        perror("bind");
-        return 1;
-    }
-    
-    //Enable listening on given socket
-    if (listen(serverSock, 3) < 0) 
-    { 
-        fprintf(stderr, "Listening failed. Terminating.\n"); 
-        exit(EXIT_FAILURE); 
-    }
-
-    fprintf(stderr, "Waiting on something to accept...");
-
-    //Accept the client
-    if ((serverSock = accept(serverSock, (struct sockaddr *)&serverAddr, (socklen_t*)&serverAddrLen))<0) 
-    { 
-        fprintf(stderr, "Telnet accept failed. Terminating.\n");
-        return 1;
-    }
-
-    fprintf(stderr, "Connected to something else!");
+    fprintf(stderr, "Connected to telnet!");
 
     //While user is still inputting data
     while(1)
