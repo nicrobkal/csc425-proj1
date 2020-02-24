@@ -175,9 +175,9 @@ int main(int argc, char *argv[])
             }
         }
 	
-	//Santize buffers
+	//Sanitize buffers
 	int i;
-	for(int i = 0; i < 1025; i++)
+	for(i = 0; i < 1025; i++)
 	{
 	    telnetBuff[i] = '\0';
 	    serverBuff[i] = '\0';

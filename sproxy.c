@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
             }
         }
 
-        //Sanitize Buffer
+        //Sanitize buffers
 	int i;
 	for(i = 0; i < 1025; i++)
 	{
