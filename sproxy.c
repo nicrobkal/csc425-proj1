@@ -92,10 +92,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    telnetAddr.sin_family = AF_INET; 
-    telnetAddr.sin_addr.s_addr = INADDR_ANY; 
-    telnetAddr.sin_port = htons(23);
-
     //Create socket file descriptor
     if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
@@ -112,7 +108,7 @@ int main(int argc, char *argv[])
 
     serverAddr.sin_family = AF_INET; 
     serverAddr.sin_addr.s_addr = INADDR_ANY; 
-    serverAddr.sin_port = htons(atoi(argv[1])); 
+    serverAddr.sin_port = htons(23); 
        
     //Bind ip to socket
     if(bind(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
