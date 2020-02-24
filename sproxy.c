@@ -113,7 +113,7 @@ int main(int argc, char *argv[])
     //Bind ip to socket
     if(bind(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
     {
-        fprintf(stderr, "Server binding failed. Terminating.\n");
+        fprintf(stderr, "Telnet binding failed. Terminating.\n");
         return 1;
     }
     
