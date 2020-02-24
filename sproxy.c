@@ -135,60 +135,60 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-        //While user is still inputting data
-        while(1)
+    //While user is still inputting data
+    while(1)
+    {
+        //Clear the set
+        int n = 0;
+        FD_ZERO(&readfds);
+
+        //Add descriptors
+        FD_SET(telnetSock, &readfds);
+        FD_SET(serverSock, &readfds);
+
+        //Find larger file descriptor
+        if(telnetSock > serverSock)
         {
-            //Clear the set
-            int n = 0;
-            FD_ZERO(&readfds);
+            n = telnetSock + 1;
+        }
+        else
+        {
+            n = serverSock + 1;
+        }
 
-            //Add descriptors
-            FD_SET(telnetSock, &readfds);
-            FD_SET(serverSock, &readfds);
+        //Select returns one of the sockets or timeout
+        int rv = select(n, &readfds, NULL, NULL, NULL);
 
-            //Find larger file descriptor
-            if(telnetSock > serverSock)
-            {
-                n = telnetSock + 1;
-            }
-            else
-            {
-                n = serverSock + 1;
-            }
-
-            //Select returns one of the sockets or timeout
-            int rv = select(n, &readfds, NULL, NULL, NULL);
-
-            if (rv == -1)
-            {
-                fprintf(stderr, "Select() function failed.\n");
+        if (rv == -1)
+        {
+            fprintf(stderr, "Select() function failed.\n");
             close(telnetSock);
             close(serverSock);
             return 1;
-            }
-            else if(rv == 0)
-            {
-                printf("Timeout occurred! No data after 10.5 seconds.\n");
-                close(telnetSock);
+        }
+        else if(rv == 0)
+        {
+            printf("Timeout occurred! No data after 10.5 seconds.\n");
+            close(telnetSock);
             close(serverSock);
             return 1;
-            }
-            else
+        }
+        else
+        {
+            //One or both descrptors have data
+            if(FD_ISSET(telnetSock, &readfds))
             {
-                //One or both descrptors have data
-                if(FD_ISSET(telnetSock, &readfds))
-                {
-                    recv(telnetSock, telnetBuff, maxLen, 0);
-                    send(serverSock, telnetBuff, strlen(telnetBuff), 0);
-            printf("%s", telnetBuff);
-                }
-                if(FD_ISSET(serverSock, &readfds))
-                {
-                    recv(serverSock, serverBuff, maxLen, 0);
-                    send(telnetSock, serverBuff, strlen(serverBuff), 0);
-            printf("%s", serverBuff);
-                }
+                recv(telnetSock, telnetBuff, maxLen, 0);
+                send(serverSock, telnetBuff, strlen(telnetBuff), 0);
+                printf("%s", telnetBuff);
             }
+            if(FD_ISSET(serverSock, &readfds))
+            {
+                recv(serverSock, serverBuff, maxLen, 0);
+                send(telnetSock, serverBuff, strlen(serverBuff), 0);
+                printf("%s", serverBuff);
+            }
+        }
 
             //Sanitize buffers
         int i;
