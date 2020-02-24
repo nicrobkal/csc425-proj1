@@ -42,7 +42,6 @@ int main(int argc, char *argv[])
     int telnetAddrLen = sizeof(telnetAddr);
     struct sockaddr_in serverAddr;
     fd_set readfds;
-    struct timeval tv;
     char telnetBuff[1025] = {0};
     char serverBuff[1025] = {0};
 
@@ -137,12 +136,8 @@ int main(int argc, char *argv[])
             n = serverSock + 1;
         }
 
-        //Wait for sockets to receive data
-        tv.tv_sec = 10;
-        tv.tv_usec = 500000;
-
         //Select returns one of the sockets or timeout
-        int rv = select(n, &readfds, NULL, NULL, &tv);
+        int rv = select(n, &readfds, NULL, NULL, NULL);
 
         if (rv == -1)
         {

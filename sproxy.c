@@ -41,8 +41,8 @@ int main(int argc, char *argv[])
     struct sockaddr_in telnetAddr;
     int telnetAddrLen = sizeof(telnetAddr);
     struct sockaddr_in serverAddr;
+    int serverAddrLen = sizeof(serverAddr);
     fd_set readfds;
-    struct timeval tv;
     char telnetBuff[1025] = {0};
     char serverBuff[1025] = {0};
 
@@ -92,28 +92,43 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    //Create initial socket
-    if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+    //Create socket file descriptor
+    if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
-        printf("Failed to create socket. Terminating.\n"); 
-        return 1; 
-    } 
-   
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(23); 
-
-    //Bind IP to socket
-    if(inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr) <=0 )  
-    { 
-        printf("Invalid Server Address. Terminating.\n"); 
+        fprintf(stderr, "Socket failed to connect. Terminating.\n");
         return 1;
     } 
-   
-    //Connect to server
-    if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
+       
+    //Attach socket to port
+    if (setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
     { 
-        printf("Connection Failed \n"); 
-        return 1; 
+        fprintf(stderr, "Failed setting sock options. Terminating.\n");
+    	return 1;
+    }
+
+    serverAddr.sin_family = AF_INET; 
+    serverAddr.sin_addr.s_addr = INADDR_ANY; 
+    serverAddr.sin_port = htons(23); 
+       
+    //Bind ip to socket
+    if(bind(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
+    {
+        fprintf(stderr, "Binding failed. Terminating.\n");
+        return 1;
+    }
+    
+    //Enable listening on given socket
+    if (listen(serverSock, 3) < 0) 
+    { 
+        fprintf(stderr, "Listening failed. Terminating.\n"); 
+        exit(EXIT_FAILURE); 
+    }
+
+    //Accept the client
+    if ((serverSock = accept(serverSock, (struct sockaddr *)&serverAddr, (socklen_t*)&serverAddrLen))<0) 
+    { 
+        fprintf(stderr, "Accept failed. Terminating.\n");
+        return 1;
     }
 
     //While user is still inputting data
@@ -137,12 +152,8 @@ int main(int argc, char *argv[])
             n = serverSock + 1;
         }
 
-        //Wait for sockets to receive data
-        tv.tv_sec = 10;
-        tv.tv_usec = 500000;
-
         //Select returns one of the sockets or timeout
-        int rv = select(n, &readfds, NULL, NULL, &tv);
+        int rv = select(n, &readfds, NULL, NULL, NULL);
 
         if (rv == -1)
         {
