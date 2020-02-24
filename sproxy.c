@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 
     telnetAddr.sin_family = AF_INET; 
     telnetAddr.sin_addr.s_addr = INADDR_ANY; 
-    telnetAddr.sin_port = htonl(atoi(argv[1])); 
+    telnetAddr.sin_port = htons(atoi(argv[1])); 
        
     //Bind ip to socket
     if(bind(masterSocket, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) 
@@ -103,14 +103,14 @@ int main(int argc, char *argv[])
     } 
    
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htonl(23); 
+    serverAddr.sin_port = htons(23); 
 
     //Bind IP to socket
     if(inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr) <=0 )  
     {
         printf("Invalid Server Address. Terminating.\n"); 
         return 1;
-    } 
+    }
    
     //Connect to server
     if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
