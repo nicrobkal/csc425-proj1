@@ -41,7 +41,6 @@ int main(int argc, char *argv[])
     struct sockaddr_in telnetAddr = {0};
     int telnetAddrLen = sizeof(telnetAddr);
     struct sockaddr_in serverAddr = {0};
-    int serverAddrLen = sizeof(serverAddr);
     fd_set readfds;
     char telnetBuff[1025] = {0};
     char serverBuff[1025] = {0};
@@ -69,7 +68,7 @@ int main(int argc, char *argv[])
 
     telnetAddr.sin_family = AF_INET; 
     telnetAddr.sin_addr.s_addr = INADDR_ANY; 
-    telnetAddr.sin_port = htons(atoi(argv[1])); 
+    telnetAddr.sin_port = htonl(atoi(argv[1])); 
        
     //Bind ip to socket
     if(bind(masterSocket, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) 
@@ -94,7 +93,7 @@ int main(int argc, char *argv[])
 
     fprintf(stderr, "Connected to cproxy!");
 
-        //Create initial socket
+    //Create initial socket
     if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
     { 
         printf("Failed to create socket. Terminating.\n"); 
@@ -102,11 +101,11 @@ int main(int argc, char *argv[])
     } 
    
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(23); 
+    serverAddr.sin_port = htonl(23); 
 
     //Bind IP to socket
-    if(inet_pton(AF_INET, argv[2], &serverAddr.sin_addr) <=0 )  
-    { 
+    if(inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr) <=0 )  
+    {
         printf("Invalid Server Address. Terminating.\n"); 
         return 1;
     } 
