@@ -36,15 +36,15 @@ char* removeNewline(char *s)
 int main(int argc, char *argv[]) 
 { 
     int serverSock = 0, telnetSock = 0;
-    int maxLen = 256;
+    int maxLen = 1024;
     int opt = 1; 
     struct sockaddr_in telnetAddr;
     int telnetAddrLen = sizeof(telnetAddr);
     struct sockaddr_in serverAddr;
     fd_set readfds;
     struct timeval tv;
-    char telnetBuff[256] = {0};
-    char serverBuff[256] = {0};
+    char telnetBuff[1025] = {0};
+    char serverBuff[1025] = {0};
 
     //Check if arguments are valid
     if(argc != 4)

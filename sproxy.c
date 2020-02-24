@@ -43,8 +43,8 @@ int main(int argc, char *argv[])
     struct sockaddr_in serverAddr;
     fd_set readfds;
     struct timeval tv;
-    char telnetBuff[256] = {0};
-    char serverBuff[256] = {0};
+    char telnetBuff[1025] = {0};
+    char serverBuff[1025] = {0};
 
     //Check if arguments are valid
     if(argc != 2)
