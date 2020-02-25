@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     //Create initial socket
     if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
     { 
-        printf("Failed to create socket. Terminating.\n"); 
+        perror("socket"); 
         return 1; 
     } 
    
@@ -65,14 +65,14 @@ int main(int argc, char *argv[])
     //Bind IP to socket
     if(inet_pton(AF_INET, argv[2], &serverAddr.sin_addr) <=0 )  
     { 
-        printf("Invalid Server Address. Terminating.\n"); 
+        perror("inet_pton"); 
         return 1;
     } 
    
     //Connect to server
     if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
     { 
-        printf("Connection Failed \n"); 
+        perror("connect");
         return 1; 
     }
 
