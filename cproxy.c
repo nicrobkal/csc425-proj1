@@ -91,6 +91,14 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    recv(telnetSock, telnetBuff, maxLen, 0);
+    int i;
+	for(i = 0; i < 1025; i++)
+	{
+	    telnetBuff[i] = '\0';
+	    serverBuff[i] = '\0';
+	}
+
     //Create initial socket
     if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
     { 
@@ -142,16 +150,16 @@ int main(int argc, char *argv[])
         if (rv == -1)
         {
             fprintf(stderr, "Select() function failed.");
-	    close(telnetSock);
-	    close(serverSock);
-	    return 1;
+	        close(telnetSock);
+	        close(serverSock);
+	        return 1;
         }
         else if(rv == 0)
         {
             printf("Timeout occurred! No data after 10.5 seconds.");
             close(telnetSock);
-	    close(serverSock);
-	    return 1;
+	        close(serverSock);
+	        return 1;
         }
         else
         {
@@ -160,13 +168,13 @@ int main(int argc, char *argv[])
             {
                 recv(telnetSock, telnetBuff, maxLen, 0);
                 send(serverSock, telnetBuff, strlen(telnetBuff), 0);
-		printf("%s", telnetBuff);
+		        printf("%s", telnetBuff);
             }
             if(FD_ISSET(serverSock, &readfds))
             {
                 recv(serverSock, serverBuff, maxLen, 0);
                 send(telnetSock, serverBuff, strlen(serverBuff), 0);
-		printf("%s", serverBuff);
+		        printf("%s", serverBuff);
             }
         }
 	
