@@ -115,6 +115,8 @@ int main(int argc, char *argv[])
         return 1; 
     }
 
+    fprintf(stderr, "Connected to telnet!");
+
     //While user is still inputting data
     while(1)
     {
