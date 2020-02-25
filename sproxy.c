@@ -53,6 +53,45 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+        //Create socket file descriptor
+    if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+    { 
+        fprintf(stderr, "Socket failed to connect. Terminating.\n");
+        return 1;
+    } 
+       
+    //Attach socket to port
+    if (setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
+    { 
+        fprintf(stderr, "Failed setting sock options. Terminating.\n");
+    	return 1;
+    }
+
+    serverAddr.sin_family = AF_INET; 
+    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 
+    //serverAddr.sin_port = htonl(23);
+       
+    //Bind ip to socket
+    if(bind(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
+    {
+        perror("bind");
+        return 1;
+    }
+    
+    //Enable listening on given socket
+    if (listen(serverSock, 3) < 0) 
+    { 
+        fprintf(stderr, "Listening failed. Terminating.\n"); 
+        exit(EXIT_FAILURE); 
+    }
+
+    //Accept the client
+    if ((serverSock = accept(serverSock, (struct sockaddr *)&serverAddr, (socklen_t*)&serverAddrLen))<0) 
+    { 
+        fprintf(stderr, "Telnet accept failed. Terminating.\n");
+        return 1;
+    }
+
     //Create socket file descriptor
     if ((masterSocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
@@ -89,45 +128,6 @@ int main(int argc, char *argv[])
     if ((masterSocket = accept(masterSocket, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
         fprintf(stderr, "Server accept failed. Terminating.\n");
-        return 1;
-    }
-
-    //Create socket file descriptor
-    if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
-    { 
-        fprintf(stderr, "Socket failed to connect. Terminating.\n");
-        return 1;
-    } 
-       
-    //Attach socket to port
-    if (setsockopt(serverSock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
-    { 
-        fprintf(stderr, "Failed setting sock options. Terminating.\n");
-    	return 1;
-    }
-
-    serverAddr.sin_family = AF_INET; 
-    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1"); 
-    //serverAddr.sin_port = htonl(23);
-       
-    //Bind ip to socket
-    if(bind(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
-    {
-        perror("bind");
-        return 1;
-    }
-    
-    //Enable listening on given socket
-    if (listen(serverSock, 3) < 0) 
-    { 
-        fprintf(stderr, "Listening failed. Terminating.\n"); 
-        exit(EXIT_FAILURE); 
-    }
-
-    //Accept the client
-    if ((serverSock = accept(serverSock, (struct sockaddr *)&serverAddr, (socklen_t*)&serverAddrLen))<0) 
-    { 
-        fprintf(stderr, "Telnet accept failed. Terminating.\n");
         return 1;
     }
 
