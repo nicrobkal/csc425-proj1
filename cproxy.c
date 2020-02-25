@@ -55,14 +55,14 @@ int main(int argc, char *argv[])
     //Create socket file descriptor
     if ((telnetSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
-        fprintf(stderr, "Socket failed to connect. Terminating.\n");
+        perror("socket");
         return 1;
     } 
        
     //Attach socket to port
     if (setsockopt(telnetSock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
     { 
-        fprintf(stderr, "Failed setting sock options. Terminating.\n");
+        perror("setsockopt");
     	return 1;
     }
 
@@ -73,21 +73,21 @@ int main(int argc, char *argv[])
     //Bind ip to socket
     if(bind(telnetSock, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) 
     {
-        fprintf(stderr, "Binding failed. Terminating.\n");
+        perror("bind");
         return 1;
     }
     
     //Enable listening on given socket
     if (listen(telnetSock, 3) < 0) 
     { 
-        fprintf(stderr, "Listening failed. Terminating.\n"); 
+        perror("listen"); 
         exit(EXIT_FAILURE); 
     }
 
     //Accept the client
     if ((telnetSock = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
-        fprintf(stderr, "Accept failed. Terminating.\n");
+        perror("accept");
         return 1;
     }
 
