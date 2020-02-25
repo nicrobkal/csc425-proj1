@@ -52,6 +52,30 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    //Create initial socket
+    if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+    { 
+        printf("Failed to create socket. Terminating.\n"); 
+        return 1; 
+    } 
+   
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(atoi(argv[3])); 
+
+    //Bind IP to socket
+    if(inet_pton(AF_INET, argv[2], &serverAddr.sin_addr) <=0 )  
+    { 
+        printf("Invalid Server Address. Terminating.\n"); 
+        return 1;
+    } 
+   
+    //Connect to server
+    if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
+    { 
+        printf("Connection Failed \n"); 
+        return 1; 
+    }
+
     //Create socket file descriptor
     if ((telnetSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
@@ -89,30 +113,6 @@ int main(int argc, char *argv[])
     { 
         fprintf(stderr, "Accept failed. Terminating.\n");
         return 1;
-    }
-
-    //Create initial socket
-    if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-    { 
-        printf("Failed to create socket. Terminating.\n"); 
-        return 1; 
-    } 
-   
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(atoi(argv[3])); 
-
-    //Bind IP to socket
-    if(inet_pton(AF_INET, argv[2], &serverAddr.sin_addr) <=0 )  
-    { 
-        printf("Invalid Server Address. Terminating.\n"); 
-        return 1;
-    } 
-   
-    //Connect to server
-    if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
-    { 
-        printf("Connection Failed \n"); 
-        return 1; 
     }
 
     //While user is still inputting data
