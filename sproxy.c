@@ -41,7 +41,6 @@ int main(int argc, char *argv[])
     struct sockaddr_in telnetAddr = {0};
     int telnetAddrLen = sizeof(telnetAddr);
     struct sockaddr_in serverAddr = {0};
-    int serverAddrLen = sizeof(serverAddr);
     fd_set readfds;
     char telnetBuff[1025] = {0};
     char serverBuff[1025] = {0};
