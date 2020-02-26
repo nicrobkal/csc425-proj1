@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
                           inet_ntoa(cproxyAddr.sin_addr) , ntohs(cproxyAddr.sin_port));
                     close(cproxySocket);    
                 }
-                //cproxyBuff[valRead] = '\0';
+                cproxyBuff[valRead] = '\0';
                 int *cproxyBuffLen = (int *)strlen(cproxyBuff);
                 sendAll(daemonSocket, cproxyBuff, cproxyBuffLen);
                 /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
@@ -232,7 +232,7 @@ int main(int argc, char *argv[])
                           inet_ntoa(daemonAddr.sin_addr) , ntohs(daemonAddr.sin_port));
                         close(daemonSocket);
                 }
-                //cproxyBuff[valRead] = '\0';
+                cproxyBuff[valRead] = '\0';
                 int *daemonBuffLen = (int *)strlen(daemonBuff);
                 sendAll(cproxySocket, daemonBuff, daemonBuffLen);
                 /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
