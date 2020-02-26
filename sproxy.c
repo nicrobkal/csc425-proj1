@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
         FD_SET(cproxySocket, &readfds);
         FD_SET(daemonSocket, &readfds);
 
-        fprintf(stderr, "cproxySocket: %d, daemonSocket: %d\n", cproxySocket, daemonSocket);
+        //fprintf(stderr, "cproxySocket: %d, daemonSocket: %d\n", cproxySocket, daemonSocket);
 
         //Find larger file descriptor
         if(cproxySocket > daemonSocket)
@@ -177,8 +177,8 @@ int main(int argc, char *argv[])
                 struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];
-		        printf("Daemon from Cproxy: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
-                //printf("Cproxy: %s", cproxyBuff);
+		        //printf("Daemon from Cproxy: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
+                printf("Cproxy: %s", cproxyBuff);
             }
             if(FD_ISSET(daemonSocket, &readfds))
             {
@@ -196,8 +196,8 @@ int main(int argc, char *argv[])
                 struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];
-		        printf("Daemon from daemon: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
-                //printf("Daemon: %s", daemonBuff);
+		        //printf("Daemon from daemon: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
+                printf("Daemon: %s", daemonBuff);
             }
         }
 
