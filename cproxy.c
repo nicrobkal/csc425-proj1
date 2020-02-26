@@ -160,12 +160,12 @@ int main(int argc, char *argv[])
             n = serverSock + 1;
         }
 
-        printf("Mehh");
+        //printf("Mehh");
 
         //Select returns one of the sockets or timeout
         int rv = select(n, &readfds, NULL, NULL, NULL);
 
-        printf("Yolo");
+        //printf("Yolo");
 
         if (rv == -1)
         {
