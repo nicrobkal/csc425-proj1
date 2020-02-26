@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
 
     //Create initial socket
     if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-    { 
+    {
         perror("socket"); 
         return 1;
     }
@@ -139,8 +139,12 @@ int main(int argc, char *argv[])
             n = serverSock + 1;
         }
 
+        printf("Mehh");
+
         //Select returns one of the sockets or timeout
         int rv = select(n, &readfds, NULL, NULL, NULL);
+
+        printf("Yolo");
 
         if (rv == -1)
         {
@@ -169,7 +173,7 @@ int main(int argc, char *argv[])
                           inet_ntoa(telnetAddr.sin_addr) , ntohs(telnetAddr.sin_port));
                     close(telnetSock);    
                 }
-                telnetBuff[valRead] = '\0';
+                //telnetBuff[valRead] = '\0';
                 send(serverSock, telnetBuff, strlen(telnetBuff), 0);
 		        //printf("Telnet: %s", telnetBuff);
             }
@@ -184,7 +188,7 @@ int main(int argc, char *argv[])
                           inet_ntoa(serverAddr.sin_addr) , ntohs(serverAddr.sin_port));
                     close(serverSock);    
                 }
-                serverBuff[valRead] = '\0';
+                //serverBuff[valRead] = '\0';
                 send(telnetSock, serverBuff, strlen(serverBuff), 0);
                 struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&serverAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;

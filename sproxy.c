@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
                           inet_ntoa(cproxyAddr.sin_addr) , ntohs(cproxyAddr.sin_port));
                     close(cproxySocket);    
                 }
-                cproxyBuff[valRead] = '\0';
+                //cproxyBuff[valRead] = '\0';
                 send(daemonSocket, cproxyBuff, strlen(cproxyBuff), 0);
                 struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
                           inet_ntoa(daemonAddr.sin_addr) , ntohs(daemonAddr.sin_port));
                         close(daemonSocket);
                 }
-                cproxyBuff[valRead] = '\0';
+                //cproxyBuff[valRead] = '\0';
                 send(cproxySocket, daemonBuff, strlen(daemonBuff), 0);
                 struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
