@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
     }
 
     telnetAddr.sin_family = AF_INET; 
-    telnetAddr.sin_addr.s_addr = "127.0.0.1";
+    telnetAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     telnetAddr.sin_port = htons(atoi(argv[1]));
        
     //Bind ip to socket
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
                 }
                 telnetBuff[valRead] = '\0';
                 send(serverSock, telnetBuff, strlen(telnetBuff), 0);
-		        printf("%s", telnetBuff);
+		        printf("Telnet: %s", telnetBuff);
             }
             if(FD_ISSET(serverSock, &readfds))
             {
@@ -186,7 +186,8 @@ int main(int argc, char *argv[])
                 }
                 serverBuff[valRead] = '\0';
                 send(telnetSock, serverBuff, strlen(serverBuff), 0);
-		        printf("%s", serverBuff);
+                char* clientName = (char *)malloc(1025);
+		        printf("Server: %s, %s", serverBuff, inet_ntop(AF_INET, &serverAddr.sin_addr, clientName, sizeof(clientName)));
             }
         }
 	
