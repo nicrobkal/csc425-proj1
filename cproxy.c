@@ -195,8 +195,8 @@ int main(int argc, char *argv[])
                     close(telnetSock);    
                 }
                 telnetBuff[valRead] = '\0';
-                int * telnetBuffLen = (int *)strlen(telnetBuff);
-                sendAll(serverSock, telnetBuff, telnetBuffLen);
+                int telnetBuffLen = strlen(telnetBuff);
+                send(serverSock, telnetBuff, telnetBuffLen, 0);
 		        //printf("Telnet: %s", telnetBuff);
             }
             if(FD_ISSET(serverSock, &readfds))
@@ -211,8 +211,8 @@ int main(int argc, char *argv[])
                     close(serverSock);    
                 }
                 serverBuff[valRead] = '\0';
-                int * serverBuffLen = (int *)strlen(serverBuff);
-                sendAll(telnetSock, serverBuff, serverBuffLen);
+                int serverBuffLen = strlen(serverBuff);
+                send(telnetSock, serverBuff, serverBuffLen, 0);
                 /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&serverAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];

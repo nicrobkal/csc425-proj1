@@ -194,8 +194,8 @@ int main(int argc, char *argv[])
                     close(cproxySocket);    
                 }
                 cproxyBuff[valRead] = '\0';
-                int *cproxyBuffLen = (int *)strlen(cproxyBuff);
-                sendAll(daemonSocket, cproxyBuff, cproxyBuffLen);
+                int cproxyBuffLen = strlen(cproxyBuff);
+                send(daemonSocket, cproxyBuff, cproxyBuffLen, 0);
                 /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];
@@ -214,8 +214,8 @@ int main(int argc, char *argv[])
                         close(daemonSocket);
                 }
                 cproxyBuff[valRead] = '\0';
-                int *daemonBuffLen = (int *)strlen(daemonBuff);
-                sendAll(cproxySocket, daemonBuff, daemonBuffLen);
+                int daemonBuffLen = strlen(daemonBuff);
+                send(cproxySocket, daemonBuff, daemonBuffLen, 0);
                 /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];
