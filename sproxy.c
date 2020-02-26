@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
         return 1; 
     }
 
-    fprintf(stderr, "Connected to telnet!\n");
+    //fprintf(stderr, "Connected to telnet!\n");
 
     //While user is still inputting data
     while(1)
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
         FD_SET(cproxySocket, &readfds);
         FD_SET(daemonSocket, &readfds);
 
-        fprintf(stderr, "cproxySocket: %d, daemonSocket: %d\n", cproxySocket, daemonSocket);
+        //fprintf(stderr, "cproxySocket: %d, daemonSocket: %d\n", cproxySocket, daemonSocket);
 
         //Find larger file descriptor
         if(cproxySocket > daemonSocket)

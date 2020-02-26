@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 
     //Create initial socket
     if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-    { 
+    {
         perror("socket"); 
         return 1;
     }
@@ -179,8 +179,12 @@ int main(int argc, char *argv[])
             n = serverSock + 1;
         }
 
+        printf("Mehh");
+
         //Select returns one of the sockets or timeout
         int rv = select(n, &readfds, NULL, NULL, NULL);
+
+        printf("Yolo");
 
         if (rv == -1)
         {
@@ -210,9 +214,14 @@ int main(int argc, char *argv[])
                     close(telnetSock);    
                 }
                 //telnetBuff[valRead] = '\0';
+<<<<<<< HEAD
                 int * telnetBuffLen = (int *)strlen(telnetBuff);
                 sendAll(serverSock, telnetBuff, telnetBuffLen);
 		        printf("Telnet: %s", telnetBuff);
+=======
+                send(serverSock, telnetBuff, strlen(telnetBuff), 0);
+		        //printf("Telnet: %s", telnetBuff);
+>>>>>>> e0d82c8a82f66b1abacd285fb7a2ecd41ef96e5e
             }
             if(FD_ISSET(serverSock, &readfds))
             {
@@ -226,6 +235,7 @@ int main(int argc, char *argv[])
                     close(serverSock);    
                 }
                 //serverBuff[valRead] = '\0';
+<<<<<<< HEAD
                 int * serverBuffLen = (int *)strlen(serverBuff);
                 sendAll(telnetSock, serverBuff, serverBuffLen);
                 /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&serverAddr;
@@ -233,6 +243,13 @@ int main(int argc, char *argv[])
                 char str[INET_ADDRSTRLEN];
 		        printf("Server: %s, %s", serverBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
                 */
+=======
+                send(telnetSock, serverBuff, strlen(serverBuff), 0);
+                struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&serverAddr;
+                struct in_addr ipAddr = pV4Addr->sin_addr;
+                char str[INET_ADDRSTRLEN];
+		        //printf("Server: %s, %s", serverBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
+>>>>>>> e0d82c8a82f66b1abacd285fb7a2ecd41ef96e5e
             }
         }
 	
