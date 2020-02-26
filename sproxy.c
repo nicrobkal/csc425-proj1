@@ -174,7 +174,11 @@ int main(int argc, char *argv[])
                 }
                 cproxyBuff[valRead] = '\0';
                 send(daemonSocket, cproxyBuff, strlen(cproxyBuff), 0);
-                printf("Cproxy: %s", cproxyBuff);
+                struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
+                struct in_addr ipAddr = pV4Addr->sin_addr;
+                char str[INET_ADDRSTRLEN];
+		        printf("Daemon: %s, %s", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
+                //printf("Cproxy: %s", cproxyBuff);
             }
             if(FD_ISSET(daemonSocket, &readfds))
             {
@@ -189,7 +193,11 @@ int main(int argc, char *argv[])
                 }
                 cproxyBuff[valRead] = '\0';
                 send(cproxySocket, daemonBuff, strlen(daemonBuff), 0);
-                printf("Daemon: %s", daemonBuff);
+                struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
+                struct in_addr ipAddr = pV4Addr->sin_addr;
+                char str[INET_ADDRSTRLEN];
+		        printf("Daemon: %s, %s", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
+                //printf("Daemon: %s", daemonBuff);
             }
         }
 
