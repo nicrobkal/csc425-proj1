@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
         return 1; 
     }
 
-    fprintf(stderr, "Connected to telnet!");
+    fprintf(stderr, "Connected to telnet!\n");
 
     //While user is still inputting data
     while(1)
@@ -128,6 +128,8 @@ int main(int argc, char *argv[])
         //Add descriptors
         FD_SET(masterSocket, &readfds);
         FD_SET(serverSock, &readfds);
+
+        fprintf("masterSocket: %d, serverSock: %d\n"masterSocket, serverSock);
 
         //Find larger file descriptor
         if(masterSocket > serverSock)
@@ -167,6 +169,7 @@ int main(int argc, char *argv[])
                     getpeername(masterSocket, (struct sockaddr*)&telnetAddr , (socklen_t*)&telnetAddrLen); 
                     printf("Host disconnected , ip %s , port %d \n" ,  
                           inet_ntoa(telnetAddr.sin_addr) , ntohs(telnetAddr.sin_port));
+                    close(telnetAddr);    
                 }
                 telnetBuff[valRead] = '\0';
                 send(serverSock, telnetBuff, strlen(telnetBuff), 0);
@@ -181,6 +184,7 @@ int main(int argc, char *argv[])
                     getpeername(serverSock, (struct sockaddr*)&serverAddr , (socklen_t*)&serverAddrLen); 
                     printf("Host disconnected , ip %s , port %d \n" ,  
                           inet_ntoa(serverAddr.sin_addr) , ntohs(serverAddr.sin_port));
+                        close(serverAddr);
                 }
                 telnetBuff[valRead] = '\0';
                 send(masterSocket, serverBuff, strlen(serverBuff), 0);
