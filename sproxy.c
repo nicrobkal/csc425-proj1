@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
         FD_SET(cproxySocket, &readfds);
         FD_SET(daemonSocket, &readfds);
 
-        fprintf(stderr, "masterSocket: %d, serverSock: %d\n", cproxySocket, daemonSocket);
+        fprintf(stderr, "cproxySocket: %d, daemonSocket: %d\n", cproxySocket, daemonSocket);
 
         //Find larger file descriptor
         if(cproxySocket > daemonSocket)
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
                 }
                 cproxyBuff[valRead] = '\0';
                 send(daemonSocket, cproxyBuff, strlen(cproxyBuff), 0);
-                printf("%s", cproxyBuff);
+                printf("Cproxy: %s", cproxyBuff);
             }
             if(FD_ISSET(daemonSocket, &readfds))
             {
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
                 }
                 cproxyBuff[valRead] = '\0';
                 send(cproxySocket, daemonBuff, strlen(daemonBuff), 0);
-                printf("%s", daemonBuff);
+                printf("Daemon: %s", daemonBuff);
             }
         }
 
