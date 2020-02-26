@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
                 telnetBuff[valRead] = '\0';
                 int telnetBuffLen = strlen(telnetBuff);
                 send(serverSock, telnetBuff, telnetBuffLen, 0);
-		        //printf("Telnet: %s", telnetBuff);
+		        printf("Telnet: %s", telnetBuff);
             }
             if(FD_ISSET(serverSock, &readfds))
             {
@@ -213,6 +213,7 @@ int main(int argc, char *argv[])
                 serverBuff[valRead] = '\0';
                 int serverBuffLen = strlen(serverBuff);
                 send(telnetSock, serverBuff, serverBuffLen, 0);
+                printf("Server: %s", serverBuff);
                 /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&serverAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];
