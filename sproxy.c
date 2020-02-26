@@ -117,7 +117,7 @@ int main(int argc, char *argv[])
         return 1; 
     }
 
-    fprintf(stderr, "Connected to telnet!\n");
+    //fprintf(stderr, "Connected to telnet!\n");
 
     //While user is still inputting data
     while(1)
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];
 		        //printf("Daemon from Cproxy: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
-                printf("Cproxy: %s", cproxyBuff);
+                //printf("Cproxy: %s", cproxyBuff);
             }
             if(FD_ISSET(daemonSocket, &readfds))
             {
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];
 		        //printf("Daemon from daemon: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
-                printf("Daemon: %s", daemonBuff);
+                //printf("Daemon: %s", daemonBuff);
             }
         }
 
