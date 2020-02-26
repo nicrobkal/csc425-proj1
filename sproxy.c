@@ -166,6 +166,8 @@ int main(int argc, char *argv[])
         //Select returns one of the sockets or timeout
         int rv = select(n, &readfds, NULL, NULL, NULL);
 
+        fprintf(stderr, "Gahh: %d", n);
+
         if (rv == -1)
         {
             perror("select");
