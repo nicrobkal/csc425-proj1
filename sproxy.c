@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
             if(FD_ISSET(serverSock, &readfds))
             {
                 recv(serverSock, serverBuff, maxLen, 0);
-                send(masterSocket, serverBuff, strlen(serverBuff), 0);
+                //send(masterSocket, serverBuff, strlen(serverBuff), 0);
                 printf("%s", serverBuff);
             }
         }

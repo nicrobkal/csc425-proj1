@@ -91,14 +91,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    recv(telnetSock, telnetBuff, maxLen, 0);
-    int i;
-	for(i = 0; i < 1025; i++)
-	{
-	    telnetBuff[i] = '\0';
-	    serverBuff[i] = '\0';
-	}
-
     //Create initial socket
     if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
     { 
