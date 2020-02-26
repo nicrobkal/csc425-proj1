@@ -99,14 +99,16 @@ int main(int argc, char *argv[])
     }
    
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(atoi(argv[3])); 
+    serverAddr.sin_addr.s_addr = inet_addr(argv[2]);
+    serverAddr.sin_port = htons(atoi(argv[3]));
 
+    /*
     //Bind IP to socket
     if(inet_pton(AF_INET, argv[2], &serverAddr.sin_addr) <=0 )  
     { 
         perror("inet_pton"); 
         return 1;
-    } 
+    } */
    
     //Connect to server
     if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 

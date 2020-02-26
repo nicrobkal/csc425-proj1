@@ -35,15 +35,15 @@ char* removeNewline(char *s)
 
 int main(int argc, char *argv[]) 
 { 
-    int masterSocket = 0, serverSock = 0;
+    int cproxySocket = 0, daemonSocket = 0;
     int maxLen = 256;
     int opt = 1; 
-    struct sockaddr_in telnetAddr = {0};
-    int telnetAddrLen = sizeof(telnetAddr);
-    struct sockaddr_in serverAddr = {0};
+    struct sockaddr_in cproxyAddr = {0};
+    int telnetAddrLen = sizeof(cproxyAddr);
+    struct sockaddr_in daemonAddr = {0};
     fd_set readfds;
-    char telnetBuff[1025] = {0};
-    char serverBuff[1025] = {0};
+    char cproxyBuff[1025] = {0};
+    char daemonBuff[1025] = {0};
 
     //Check if arguments are valid
     if(argc != 2)
@@ -53,54 +53,54 @@ int main(int argc, char *argv[])
     }
 
     //Create socket file descriptor
-    if ((masterSocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+    if ((cproxySocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
         perror("socket");
         return 1;
     } 
        
     //Attach socket to port
-    if (setsockopt(masterSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
+    if (setsockopt(cproxySocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
     { 
         perror("setsockopt");
     	return 1;
     }
 
-    telnetAddr.sin_family = AF_INET; 
-    telnetAddr.sin_addr.s_addr = INADDR_ANY; 
-    telnetAddr.sin_port = htons(atoi(argv[1])); 
+    cproxyAddr.sin_family = AF_INET; 
+    cproxyAddr.sin_addr.s_addr = INADDR_ANY; 
+    cproxyAddr.sin_port = htons(atoi(argv[1])); 
        
     //Bind ip to socket
-    if(bind(masterSocket, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) 
+    if(bind(cproxySocket, (struct sockaddr *)&cproxyAddr, sizeof(cproxyAddr)) < 0) 
     {
         perror("bind");
         return 1;
     }
     
     //Enable listening on given socket
-    if (listen(masterSocket, 1) < 0) 
+    if (listen(cproxySocket, 1) < 0) 
     { 
         perror("listen"); 
         exit(EXIT_FAILURE); 
     }
 
     //Accept the client
-    if ((masterSocket = accept(masterSocket, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
+    if ((cproxySocket = accept(cproxySocket, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
         perror("accept");
         return 1;
     }
 
     //Create initial socket
-    if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+    if ((daemonSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
     { 
         perror("socket"); 
         return 1;
     }
    
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    serverAddr.sin_port = htons(23); 
+    daemonAddr.sin_family = AF_INET;
+    daemonAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    daemonAddr.sin_port = htons(23); 
 
     /*//Bind IP to socket
     if(inet_pton(AF_INET, (struct sockaddr *)&serverAddr, &serverAddr.sin_addr) <=0 )  
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     }*/
    
     //Connect to server
-    if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
+    if (connect(daemonSocket, (struct sockaddr *)&daemonAddr, sizeof(daemonAddr)) < 0) 
     { 
         perror("connect");
         return 1; 
@@ -126,19 +126,19 @@ int main(int argc, char *argv[])
         FD_ZERO(&readfds);
 
         //Add descriptors
-        FD_SET(masterSocket, &readfds);
-        FD_SET(serverSock, &readfds);
+        FD_SET(cproxySocket, &readfds);
+        FD_SET(daemonSocket, &readfds);
 
-        fprintf(stderr, "masterSocket: %d, serverSock: %d\n", masterSocket, serverSock);
+        fprintf(stderr, "masterSocket: %d, serverSock: %d\n", cproxySocket, daemonSocket);
 
         //Find larger file descriptor
-        if(masterSocket > serverSock)
+        if(cproxySocket > daemonSocket)
         {
-            n = masterSocket + 1;
+            n = cproxySocket + 1;
         }
         else
         {
-            n = serverSock + 1;
+            n = daemonSocket + 1;
         }
 
         //Select returns one of the sockets or timeout
@@ -147,48 +147,48 @@ int main(int argc, char *argv[])
         if (rv == -1)
         {
             fprintf(stderr, "Select() function failed.\n");
-            close(masterSocket);
-            close(serverSock);
+            close(cproxySocket);
+            close(daemonSocket);
             return 1;
         }
         else if(rv == 0)
         {
             printf("Timeout occurred! No data after 10.5 seconds.\n");
-            close(masterSocket);
-            close(serverSock);
+            close(cproxySocket);
+            close(daemonSocket);
             return 1;
         }
         else
         {
             //One or both descrptors have data
-            if(FD_ISSET(masterSocket, &readfds))
+            if(FD_ISSET(cproxySocket, &readfds))
             {
-                int valRead = read(masterSocket, telnetBuff, maxLen);
+                int valRead = read(cproxySocket, cproxyBuff, maxLen);
                 if(valRead == 0)
                 {
-                    getpeername(masterSocket, (struct sockaddr*)&telnetAddr , (socklen_t*)&telnetAddrLen); 
+                    getpeername(cproxySocket, (struct sockaddr*)&cproxyAddr , (socklen_t*)&telnetAddrLen); 
                     printf("Host disconnected , ip %s , port %d \n" ,  
-                          inet_ntoa(telnetAddr.sin_addr) , ntohs(telnetAddr.sin_port));
-                    close(masterSocket);    
+                          inet_ntoa(cproxyAddr.sin_addr) , ntohs(cproxyAddr.sin_port));
+                    close(cproxySocket);    
                 }
-                telnetBuff[valRead] = '\0';
-                send(serverSock, telnetBuff, strlen(telnetBuff), 0);
-                printf("%s", telnetBuff);
+                cproxyBuff[valRead] = '\0';
+                send(daemonSocket, cproxyBuff, strlen(cproxyBuff), 0);
+                printf("%s", cproxyBuff);
             }
-            if(FD_ISSET(serverSock, &readfds))
+            if(FD_ISSET(daemonSocket, &readfds))
             {
-                int valRead = read(serverSock, serverBuff, maxLen);
+                int valRead = read(daemonSocket, daemonBuff, maxLen);
                 if(valRead == 0)
                 {
-                    int serverAddrLen = sizeof(serverAddr);
-                    getpeername(serverSock, (struct sockaddr*)&serverAddr , (socklen_t*)&serverAddrLen); 
+                    int serverAddrLen = sizeof(daemonAddr);
+                    getpeername(daemonSocket, (struct sockaddr*)&daemonAddr , (socklen_t*)&serverAddrLen); 
                     printf("Host disconnected , ip %s , port %d \n" ,  
-                          inet_ntoa(serverAddr.sin_addr) , ntohs(serverAddr.sin_port));
-                        close(serverSock);
+                          inet_ntoa(daemonAddr.sin_addr) , ntohs(daemonAddr.sin_port));
+                        close(daemonSocket);
                 }
-                telnetBuff[valRead] = '\0';
-                send(masterSocket, serverBuff, strlen(serverBuff), 0);
-                printf("%s", serverBuff);
+                cproxyBuff[valRead] = '\0';
+                send(cproxySocket, daemonBuff, strlen(daemonBuff), 0);
+                printf("%s", daemonBuff);
             }
         }
 
@@ -196,23 +196,23 @@ int main(int argc, char *argv[])
         int i;
         for(i = 0; i < 1025; i++)
         {
-            telnetBuff[i] = '\0';
-            serverBuff[i] = '\0';
+            cproxyBuff[i] = '\0';
+            daemonBuff[i] = '\0';
         }
     }
 
     /*
 	//Convert input to network-readable language
-    uint32_t temp = htonl(strlen(removeNewline(telnetBuff)));
+    uint32_t temp = htonl(strlen(removeNewline(cproxyBuff)));
     
     //Checks if string is valid
-    if(strlen(removeNewline(telnetBuff)) > 0)
+    if(strlen(removeNewline(cproxyBuff)) > 0)
     {
         //Send the first packet holding the size of the coming message in bytes
         send(serverSock, &temp, 4, 0);
 
         //Sanitize input
-        char* newBuff = removeNewline(telnetBuff);
+        char* newBuff = removeNewline(cproxyBuff);
 
         //Send the actual message
         send(serverSock, newBuff, strlen(newBuff), 0); 
@@ -224,17 +224,17 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        //Sanitizr telnetBuff
+        //Sanitizr cproxyBuff
         int i;
         for(i = 0; i < 1025; i++)
         {
-            telnetBuff[i] = '\0';
+            cproxyBuff[i] = '\0';
         }
     }*/
 
     //Close the sockets
-    close(masterSocket);
-    close(serverSock);
+    close(cproxySocket);
+    close(daemonSocket);
 
     return 0; 
 } 
