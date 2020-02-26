@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
                 int valRead = read(serverSock, serverBuff, maxLen);
                 if(valRead == 0)
                 {
-                    int serverAddrLen = sizeof(daemonAddr);
+                    int serverAddrLen = sizeof(serverAddr);
                     getpeername(serverSock, (struct sockaddr*)&serverAddr , (socklen_t*)&serverAddrLen); 
                     printf("Host disconnected , ip %s , port %d \n" ,  
                           inet_ntoa(serverAddr.sin_addr) , ntohs(serverAddr.sin_port));
