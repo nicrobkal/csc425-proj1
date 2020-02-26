@@ -68,8 +68,8 @@ int main(int argc, char *argv[])
     }
 
     telnetAddr.sin_family = AF_INET; 
-    telnetAddr.sin_addr.s_addr = INADDR_ANY; 
-    telnetAddr.sin_port = htons(atoi(argv[1])); 
+    telnetAddr.sin_addr.s_addr = "127.0.0.1";
+    telnetAddr.sin_port = htons(atoi(argv[1]));
        
     //Bind ip to socket
     if(bind(telnetSock, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) 
