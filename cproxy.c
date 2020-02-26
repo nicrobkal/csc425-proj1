@@ -158,13 +158,13 @@ int main(int argc, char *argv[])
             //One or both descrptors have data
             if(FD_ISSET(telnetSock, &readfds))
             {
-                recv(telnetSock, telnetBuff, maxLen, 0);
+                read(telnetSock, telnetBuff, maxLen, 0);
                 send(serverSock, telnetBuff, strlen(telnetBuff), 0);
 		        printf("%s", telnetBuff);
             }
             if(FD_ISSET(serverSock, &readfds))
             {
-                recv(serverSock, serverBuff, maxLen, 0);
+                read(serverSock, serverBuff, maxLen, 0);
                 send(telnetSock, serverBuff, strlen(serverBuff), 0);
 		        printf("%s", serverBuff);
             }
