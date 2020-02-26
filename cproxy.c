@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
 
         if (rv == -1)
         {
-            fprintf(stderr, "Select() function failed.");
+            perror("select");
 	        close(telnetSock);
 	        close(serverSock);
 	        return 1;

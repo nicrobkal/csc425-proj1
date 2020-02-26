@@ -68,11 +68,11 @@ int main(int argc, char *argv[])
     }
 
     cproxyAddr.sin_family = AF_INET; 
-    cproxyAddr.sin_addr.s_addr = INADDR_ANY; 
-    cproxyAddr.sin_port = htons(atoi(argv[1])); 
+    cproxyAddr.sin_addr.s_addr = INADDR_ANY;
+    cproxyAddr.sin_port = htons(atoi(argv[1]));
        
     //Bind ip to socket
-    if(bind(cproxySocket, (struct sockaddr *)&cproxyAddr, sizeof(cproxyAddr)) < 0) 
+    if(bind(cproxySocket, (struct sockaddr *)&cproxyAddr, sizeof(cproxyAddr)) < 0)
     {
         perror("bind");
         return 1;
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 
         if (rv == -1)
         {
-            fprintf(stderr, "Select() function failed.\n");
+            perror("select");
             close(cproxySocket);
             close(daemonSocket);
             return 1;
