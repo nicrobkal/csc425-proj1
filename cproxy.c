@@ -58,7 +58,7 @@ int sendAll(int s, char *buf, int *len)
 int main(int argc, char *argv[]) 
 { 
     int serverSock = 0, telnetSock = 0, masterSock = 0;
-    int maxLen = 1024;
+    int maxLen = 1025;
     int opt = 1; 
     struct sockaddr_in telnetAddr;
     int telnetAddrLen = sizeof(telnetAddr);

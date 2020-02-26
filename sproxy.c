@@ -58,14 +58,14 @@ char* removeNewline(char *s)
 int main(int argc, char *argv[]) 
 { 
     int cproxySocket = 0, daemonSocket = 0, masterSock = 0;
-    int maxLen = 256;
+    int maxLen = 1025;
     int opt = 1; 
     struct sockaddr_in cproxyAddr = {0};
     int telnetAddrLen = sizeof(cproxyAddr);
     struct sockaddr_in daemonAddr = {0};
     fd_set readfds;
-    char cproxyBuff[1025] = {0};
-    char daemonBuff[1025] = {0};
+    char cproxyBuff[1025];
+    char daemonBuff[1025];
 
     //Check if arguments are valid
     if(argc != 2)
@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
                           inet_ntoa(daemonAddr.sin_addr) , ntohs(daemonAddr.sin_port));
                         close(daemonSocket);
                 }
-                cproxyBuff[valRead] = '\0';
+                daemonBuff[valRead] = '\0';
                 int daemonBuffLen = strlen(daemonBuff);
                 send(cproxySocket, daemonBuff, daemonBuffLen, 0);
                 /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
