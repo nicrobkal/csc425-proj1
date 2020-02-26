@@ -161,13 +161,30 @@ int main(int argc, char *argv[])
             //One or both descrptors have data
             if(FD_ISSET(telnetSock, &readfds))
             {
-                read(telnetSock, telnetBuff, maxLen);
+                int valRead = read(telnetSock, telnetBuff, maxLen);
+                if(valRead == 0)
+                {
+                    getpeername(telnetSock, (struct sockaddr*)&telnetAddr , (socklen_t*)&telnetAddrLen); 
+                    printf("Host disconnected , ip %s , port %d \n" ,  
+                          inet_ntoa(telnetAddr.sin_addr) , ntohs(telnetAddr.sin_port));
+                    close(telnetSock);    
+                }
+                telnetBuff[valRead] = '\0';
                 send(serverSock, telnetBuff, strlen(telnetBuff), 0);
 		        printf("%s", telnetBuff);
             }
             if(FD_ISSET(serverSock, &readfds))
             {
-                read(serverSock, serverBuff, maxLen);
+                int valRead = read(serverSock, serverBuff, maxLen);
+                if(valRead == 0)
+                {
+                    int serverAddrLen = sizeof(daemonAddr);
+                    getpeername(serverSock, (struct sockaddr*)&serverAddr , (socklen_t*)&serverAddrLen); 
+                    printf("Host disconnected , ip %s , port %d \n" ,  
+                          inet_ntoa(serverAddr.sin_addr) , ntohs(serverAddr.sin_port));
+                    close(serverSock);    
+                }
+                serverBuff[valRead] = '\0';
                 send(telnetSock, serverBuff, strlen(serverBuff), 0);
 		        printf("%s", serverBuff);
             }
