@@ -165,6 +165,8 @@ int main(int argc, char *argv[])
                 if(valRead == 0)
                 {
                     getpeername(masterSocket, (struct sockaddr*)&telnetAddr , (socklen_t*)&telnetAddrLen); 
+                    printf("Host disconnected , ip %s , port %d \n" ,  
+                          inet_ntoa(telnetAddr.sin_addr) , ntohs(telnetAddr.sin_port));
                 }
                 telnetBuff[valRead] = '\0';
                 send(serverSock, telnetBuff, strlen(telnetBuff), 0);
@@ -177,6 +179,8 @@ int main(int argc, char *argv[])
                 {
                     int serverAddrLen = sizeof(serverAddr);
                     getpeername(serverSock, (struct sockaddr*)&serverAddr , (socklen_t*)&serverAddrLen); 
+                    printf("Host disconnected , ip %s , port %d \n" ,  
+                          inet_ntoa(serverAddr.sin_addr) , ntohs(serverAddr.sin_port));
                 }
                 telnetBuff[valRead] = '\0';
                 send(masterSocket, serverBuff, strlen(serverBuff), 0);
