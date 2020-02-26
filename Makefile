@@ -1,12 +1,6 @@
 main : server client sproxy cproxy
 	cp * ../10
 
-server : server.c
-	gcc -g -Wall -o server server.c
-
-client : client.c
-	gcc -g -Wall -o client client.c
-
 sproxy : sproxy.c
 	gcc -g -Wall -o sproxy sproxy.c
 
