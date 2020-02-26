@@ -99,14 +99,15 @@ int main(int argc, char *argv[])
     }
    
     serverAddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     serverAddr.sin_port = htons(23); 
 
-    //Bind IP to socket
-    if(inet_pton(AF_INET, "127.0.0.1", &serverAddr.sin_addr) <=0 )  
+    /*//Bind IP to socket
+    if(inet_pton(AF_INET, (struct sockaddr *)&serverAddr, &serverAddr.sin_addr) <=0 )  
     { 
         perror("inet_pton"); 
         return 1;
-    } 
+    }*/
    
     //Connect to server
     if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
@@ -167,7 +168,7 @@ int main(int argc, char *argv[])
             if(FD_ISSET(serverSock, &readfds))
             {
                 recv(serverSock, serverBuff, maxLen, 0);
-                //send(masterSocket, serverBuff, strlen(serverBuff), 0);
+                send(masterSocket, serverBuff, strlen(serverBuff), 0);
                 printf("%s", serverBuff);
             }
         }
