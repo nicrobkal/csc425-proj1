@@ -57,7 +57,7 @@ int sendAll(int s, char *buf, int *len)
 
 int main(int argc, char *argv[]) 
 { 
-    int serverSock = 0, telnetSock = 0;
+    int serverSock = 0, telnetSock = 0, masterSock = 0;
     int maxLen = 1024;
     int opt = 1; 
     struct sockaddr_in telnetAddr;
@@ -75,18 +75,18 @@ int main(int argc, char *argv[])
     }
 
     //Create socket file descriptor
-    if ((telnetSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+    if ((masterSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
         perror("socket");
         return 1;
     } 
        
     //Attach socket to port
-    if (setsockopt(telnetSock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
+    /*if (setsockopt(telnetSock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
     { 
         perror("setsockopt");
     	return 1;
-    }
+    }*/
 
     telnetAddr.sin_family = AF_INET; 
     telnetAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     }
 
     //Accept the client
-    if ((telnetSock = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
+    if ((telnetSock = accept(masterSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
         perror("accept");
         return 1;

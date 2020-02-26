@@ -57,7 +57,7 @@ char* removeNewline(char *s)
 
 int main(int argc, char *argv[]) 
 { 
-    int cproxySocket = 0, daemonSocket = 0;
+    int cproxySocket = 0, daemonSocket = 0, masterSock = 0;
     int maxLen = 256;
     int opt = 1; 
     struct sockaddr_in cproxyAddr = {0};
@@ -80,13 +80,14 @@ int main(int argc, char *argv[])
         perror("socket");
         return 1;
     } 
-       
+
+    /* 
     //Attach socket to port
     if (setsockopt(cproxySocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
     { 
         perror("setsockopt");
     	return 1;
-    }
+    }*/
 
     cproxyAddr.sin_family = AF_INET; 
     cproxyAddr.sin_addr.s_addr = INADDR_ANY;
@@ -107,7 +108,7 @@ int main(int argc, char *argv[])
     }
 
     //Accept the client
-    if ((cproxySocket = accept(cproxySocket, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen))<0) 
+    if ((cproxySocket = accept(masterSock, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
         perror("accept");
         return 1;
