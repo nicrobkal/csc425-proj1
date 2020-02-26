@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     }
 
     //Create socket file descriptor
-    if ((masterSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+    if ((telnetSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
         perror("socket");
         return 1;
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
     }
 
     //Accept the client
-    if ((telnetSock = accept(masterSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
+    if ((telnetSock = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
         perror("accept");
         return 1;

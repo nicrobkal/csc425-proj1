@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
     }
 
     //Accept the client
-    if ((cproxySocket = accept(masterSock, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen))<0) 
+    if ((cproxySocket = accept(cproxySocket, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
         perror("accept");
         return 1;
