@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
         FD_SET(masterSocket, &readfds);
         FD_SET(serverSock, &readfds);
 
-        fprintf("masterSocket: %d, serverSock: %d\n"masterSocket, serverSock);
+        fprintf(stderr, "masterSocket: %d, serverSock: %d\n", masterSocket, serverSock);
 
         //Find larger file descriptor
         if(masterSocket > serverSock)
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
                     getpeername(masterSocket, (struct sockaddr*)&telnetAddr , (socklen_t*)&telnetAddrLen); 
                     printf("Host disconnected , ip %s , port %d \n" ,  
                           inet_ntoa(telnetAddr.sin_addr) , ntohs(telnetAddr.sin_port));
-                    close(telnetAddr);    
+                    close(masterSocket);    
                 }
                 telnetBuff[valRead] = '\0';
                 send(serverSock, telnetBuff, strlen(telnetBuff), 0);
@@ -184,7 +184,7 @@ int main(int argc, char *argv[])
                     getpeername(serverSock, (struct sockaddr*)&serverAddr , (socklen_t*)&serverAddrLen); 
                     printf("Host disconnected , ip %s , port %d \n" ,  
                           inet_ntoa(serverAddr.sin_addr) , ntohs(serverAddr.sin_port));
-                        close(serverAddr);
+                        close(serverSock);
                 }
                 telnetBuff[valRead] = '\0';
                 send(masterSocket, serverBuff, strlen(serverBuff), 0);
