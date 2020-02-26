@@ -55,25 +55,6 @@ int sendAll(int s, char *buf, int *len)
     return n==-1?-1:0; // return -1 on failure, 0 on success
 } 
 
-/*
- * Receives all data packets in stream
- */
-int recvAll(int fd, void *dst, size_t size)
-{
-    unsigned char *buf = dst;
-    size_t rx = 0;
-
-    while (size)
-    {
-        if ((rx = recv(fd, dst, size, 0)) != 0)
-            return -1;
-        buf += rx;
-        size -= rx;
-    }
-
-    return 0;
-}
-
 int main(int argc, char *argv[]) 
 { 
     int serverSock = 0, telnetSock = 0;
@@ -205,7 +186,7 @@ int main(int argc, char *argv[])
             //One or both descrptors have data
             if(FD_ISSET(telnetSock, &readfds))
             {
-                int valRead = recvAll(telnetSock, telnetBuff, maxLen);
+                int valRead = recv(telnetSock, telnetBuff, maxLen, 0);
                 if(valRead == 0)
                 {
                     getpeername(telnetSock, (struct sockaddr*)&telnetAddr , (socklen_t*)&telnetAddrLen); 
@@ -220,7 +201,7 @@ int main(int argc, char *argv[])
             }
             if(FD_ISSET(serverSock, &readfds))
             {
-                int valRead = recvAll(serverSock, serverBuff, maxLen);
+                int valRead = recv(serverSock, serverBuff, maxLen, 0);
                 if(valRead == 0)
                 {
                     int serverAddrLen = sizeof(serverAddr);

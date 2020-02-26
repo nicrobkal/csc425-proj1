@@ -28,25 +28,6 @@ int sendAll(int s, char *buf, int *len)
 } 
 
 /*
- * Receives all data packets in stream
- */
-int recvAll(int fd, void *dst, size_t size)
-{
-    unsigned char *buf = dst;
-    size_t rx = 0;
-
-    while (size)
-    {
-        if ((rx = recv(fd, dst, size, 0)) != 0)
-            return -1;
-        buf += rx;
-        size -= rx;
-    }
-
-    return 0;
-}
-
-/*
  * Removes the newline character from a given string and returns a newly allocated string
  */
 char* removeNewline(char *s)
@@ -204,7 +185,7 @@ int main(int argc, char *argv[])
             //One or both descrptors have data
             if(FD_ISSET(cproxySocket, &readfds))
             {
-                int valRead = recvAll(cproxySocket, cproxyBuff, maxLen);
+                int valRead = recv(cproxySocket, cproxyBuff, maxLen, 0);
                 if(valRead == 0)
                 {
                     getpeername(cproxySocket, (struct sockaddr*)&cproxyAddr , (socklen_t*)&telnetAddrLen); 
@@ -223,7 +204,7 @@ int main(int argc, char *argv[])
             }
             if(FD_ISSET(daemonSocket, &readfds))
             {
-                int valRead = recvAll(daemonSocket, daemonBuff, maxLen);
+                int valRead = recv(daemonSocket, daemonBuff, maxLen, 0);
                 if(valRead == 0)
                 {
                     int serverAddrLen = sizeof(daemonAddr);
