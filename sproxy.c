@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     }
     
     //Enable listening on given socket
-    if (listen(masterSocket, 3) < 0) 
+    if (listen(masterSocket, 1) < 0) 
     { 
         perror("listen"); 
         exit(EXIT_FAILURE); 
@@ -162,6 +162,10 @@ int main(int argc, char *argv[])
             if(FD_ISSET(masterSocket, &readfds))
             {
                 int valRead = read(masterSocket, telnetBuff, maxLen);
+                if(valRead == 0)
+                {
+                    getpeername(masterSocket, (struct sockaddr*)&telnetAddr , (socklen_t*)&telnetAddrLen); 
+                }
                 telnetBuff[valRead] = '\0';
                 send(serverSock, telnetBuff, strlen(telnetBuff), 0);
                 printf("%s", telnetBuff);
@@ -169,6 +173,11 @@ int main(int argc, char *argv[])
             if(FD_ISSET(serverSock, &readfds))
             {
                 int valRead = read(serverSock, serverBuff, maxLen);
+                if(valRead == 0)
+                {
+                    int serverAddrLen = sizeof(serverAddr);
+                    getpeername(serverSock, (struct sockaddr*)&serverAddr , (socklen_t*)&serverAddrLen); 
+                }
                 telnetBuff[valRead] = '\0';
                 send(masterSocket, serverBuff, strlen(serverBuff), 0);
                 printf("%s", serverBuff);

@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     }
     
     //Enable listening on given socket
-    if (listen(telnetSock, 3) < 0) 
+    if (listen(telnetSock, 1) < 0) 
     { 
         perror("listen"); 
         exit(EXIT_FAILURE); 
