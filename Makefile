@@ -1,4 +1,4 @@
-main : server client sproxy cproxy
+main : sproxy cproxy
 	cp * ../10
 
 sproxy : sproxy.c
