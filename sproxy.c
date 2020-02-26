@@ -7,6 +7,46 @@
 #include <stdlib.h>
 
 /*
+ * Sends all data packets in stream
+ */
+int sendAll(int s, char *buf, int *len)
+{
+    int total = 0;        // how many bytes we've sent
+    int bytesleft = *len; // how many we have left to send
+    int n;
+
+    while(total < *len) {
+        n = send(s, buf+total, bytesleft, 0);
+        if (n == -1) { break; }
+        total += n;
+        bytesleft -= n;
+    }
+
+    *len = total; // return number actually sent here
+
+    return n==-1?-1:0; // return -1 on failure, 0 on success
+} 
+
+/*
+ * Receives all data packets in stream
+ */
+int recvAll(int fd, void *dst, size_t size)
+{
+    unsigned char *buf = dst;
+    size_t rx = 0;
+
+    while (size)
+    {
+        if ((rx = recv(fd, dst, size, 0)) != 0)
+            return -1;
+        buf += rx;
+        size -= rx;
+    }
+
+    return 0;
+}
+
+/*
  * Removes the newline character from a given string and returns a newly allocated string
  */
 char* removeNewline(char *s)
@@ -15,7 +55,7 @@ char* removeNewline(char *s)
     if(s[0] != '\0')
     {
         //Allocate space for new string
-        char *n = malloc( strlen( s ? s : "\n" ) );
+        char *n = malloc(strlen( s ? s : "\n" ));
 
         //Copy string
         if(s)
@@ -101,7 +141,7 @@ int main(int argc, char *argv[])
    
     daemonAddr.sin_family = AF_INET;
     daemonAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    daemonAddr.sin_port = htons(23); 
+    daemonAddr.sin_port = htons(23);
 
     /*//Bind IP to socket
     if(inet_pton(AF_INET, (struct sockaddr *)&serverAddr, &serverAddr.sin_addr) <=0 )  
@@ -164,7 +204,7 @@ int main(int argc, char *argv[])
             //One or both descrptors have data
             if(FD_ISSET(cproxySocket, &readfds))
             {
-                int valRead = read(cproxySocket, cproxyBuff, maxLen);
+                int valRead = recvAll(cproxySocket, cproxyBuff, maxLen);
                 if(valRead == 0)
                 {
                     getpeername(cproxySocket, (struct sockaddr*)&cproxyAddr , (socklen_t*)&telnetAddrLen); 
@@ -172,17 +212,18 @@ int main(int argc, char *argv[])
                           inet_ntoa(cproxyAddr.sin_addr) , ntohs(cproxyAddr.sin_port));
                     close(cproxySocket);    
                 }
-                cproxyBuff[valRead] = '\0';
-                send(daemonSocket, cproxyBuff, strlen(cproxyBuff), 0);
-                struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
+                //cproxyBuff[valRead] = '\0';
+                int *cproxyBuffLen = (int *)strlen(cproxyBuff);
+                sendAll(daemonSocket, cproxyBuff, cproxyBuffLen);
+                /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];
 		        printf("Daemon from Cproxy: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
-                //printf("Cproxy: %s", cproxyBuff);
+                *///printf("Cproxy: %s", cproxyBuff);
             }
             if(FD_ISSET(daemonSocket, &readfds))
             {
-                int valRead = read(daemonSocket, daemonBuff, maxLen);
+                int valRead = recvAll(daemonSocket, daemonBuff, maxLen);
                 if(valRead == 0)
                 {
                     int serverAddrLen = sizeof(daemonAddr);
@@ -191,13 +232,14 @@ int main(int argc, char *argv[])
                           inet_ntoa(daemonAddr.sin_addr) , ntohs(daemonAddr.sin_port));
                         close(daemonSocket);
                 }
-                cproxyBuff[valRead] = '\0';
-                send(cproxySocket, daemonBuff, strlen(daemonBuff), 0);
-                struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
+                //cproxyBuff[valRead] = '\0';
+                int *daemonBuffLen = (int *)strlen(daemonBuff);
+                sendAll(cproxySocket, daemonBuff, daemonBuffLen);
+                /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];
 		        printf("Daemon from daemon: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
-                //printf("Daemon: %s", daemonBuff);
+                *///printf("Daemon: %s", daemonBuff);
             }
         }
 

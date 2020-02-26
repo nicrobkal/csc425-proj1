@@ -1,0 +1,29 @@
+gcc -g -Wall -o sproxy sproxy.c
+sproxy.c: In function ‘main’:
+sproxy.c:216:51: warning: passing argument 3 of ‘sendAll’ makes pointer from integer without a cast [-Wint-conversion]
+                 sendAll(daemonSocket, cproxyBuff, strlen(cproxyBuff));
+                                                   ^
+sproxy.c:12:5: note: expected ‘int *’ but argument is of type ‘size_t {aka long unsigned int}’
+ int sendAll(int s, char *buf, int *len)
+     ^
+sproxy.c:235:51: warning: passing argument 3 of ‘sendAll’ makes pointer from integer without a cast [-Wint-conversion]
+                 sendAll(cproxySocket, daemonBuff, strlen(daemonBuff));
+                                                   ^
+sproxy.c:12:5: note: expected ‘int *’ but argument is of type ‘size_t {aka long unsigned int}’
+ int sendAll(int s, char *buf, int *len)
+     ^
+gcc -g -Wall -o cproxy cproxy.c
+cproxy.c: In function ‘main’:
+cproxy.c:213:49: warning: passing argument 3 of ‘sendAll’ makes pointer from integer without a cast [-Wint-conversion]
+                 sendAll(serverSock, telnetBuff, strlen(telnetBuff));
+                                                 ^
+cproxy.c:40:5: note: expected ‘int *’ but argument is of type ‘size_t {aka long unsigned int}’
+ int sendAll(int s, char *buf, int *len)
+     ^
+cproxy.c:228:49: warning: passing argument 3 of ‘sendAll’ makes pointer from integer without a cast [-Wint-conversion]
+                 sendAll(telnetSock, serverBuff, strlen(serverBuff));
+                                                 ^
+cproxy.c:40:5: note: expected ‘int *’ but argument is of type ‘size_t {aka long unsigned int}’
+ int sendAll(int s, char *buf, int *len)
+     ^
+cp * ../10
