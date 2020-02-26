@@ -186,8 +186,10 @@ int main(int argc, char *argv[])
                 }
                 serverBuff[valRead] = '\0';
                 send(telnetSock, serverBuff, strlen(serverBuff), 0);
-                char* clientName = (char *)malloc(1025);
-		        printf("Server: %s, %s", serverBuff, inet_ntop(AF_INET, &serverAddr.sin_addr, clientName, sizeof(clientName)));
+                struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&serverAddr;
+                struct in_addr ipAddr = pV4Addr->sin_addr;
+                char str[INET_ADDRSTRLEN];
+		        printf("Server: %s, %s", serverBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
             }
         }
 	
