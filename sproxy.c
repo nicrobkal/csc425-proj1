@@ -46,6 +46,13 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    //Create initial socket
+    if ((daemonSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+    { 
+        perror("socket"); 
+        return 1;
+    } 
+
     daemonAddr.sin_family = AF_INET;
     daemonAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     daemonAddr.sin_port = htons(23); 
@@ -104,13 +111,6 @@ int main(int argc, char *argv[])
         perror("accept");
         return 1;
     }
-
-    //Create initial socket
-    if ((daemonSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-    { 
-        perror("socket"); 
-        return 1;
-    } 
 
     fprintf(stderr, "We are legion!\n");
 
