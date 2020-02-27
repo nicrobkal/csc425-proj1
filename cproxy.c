@@ -7,34 +7,6 @@
 #include <stdlib.h>
 
 /*
- * Removes the newline character from a given string and returns a newly allocated string
- */
-char* removeNewline(char *s)
-{
-    //Check if string is valid
-    if(s[0] != '\0')
-    {
-        //Allocate space for new string
-        char *n = malloc( strlen( s ? s : "\n" ) );
-
-        //Copy string
-        if(s)
-        {
-            strcpy( n, s );
-        }
-
-        if(n[strlen(n)-1] == '\n')
-        {
-            n[strlen(n)-1]='\0';
-        }
-
-        return n;
-    }
-
-    return s;
-}
-
-/*
  * Sends all data packets in stream
  */
 int sendAll(int s, char *buf, int *len)
@@ -53,13 +25,12 @@ int sendAll(int s, char *buf, int *len)
     *len = total; // return number actually sent here
 
     return n==-1?-1:0; // return -1 on failure, 0 on success
-} 
+}
 
 int main(int argc, char *argv[]) 
 { 
-    int serverSock = 0, telnetSock = 0, masterSock = 0;
+    int serverSock = 0, telnetSock = 0;
     int maxLen = 1025;
-    int opt = 1; 
     struct sockaddr_in telnetAddr;
     int telnetAddrLen = sizeof(telnetAddr);
     struct sockaddr_in serverAddr;
@@ -160,12 +131,8 @@ int main(int argc, char *argv[])
             n = serverSock + 1;
         }
 
-        //printf("Mehh");
-
         //Select returns one of the sockets or timeout
         int rv = select(n, &readfds, NULL, NULL, NULL);
-
-        //printf("Yolo");
 
         if (rv == -1)
         {
@@ -229,41 +196,4 @@ int main(int argc, char *argv[])
 	    telnetBuff[i] = '\0';
 	    serverBuff[i] = '\0';
 	}
-        /*
-	//Convert input to network-readable language
-        uint32_t temp = htonl(strlen(removeNewline(telnetBuff)));
-        
-        //Checks if string is valid
-        if(strlen(removeNewline(telnetBuff)) > 0)
-        {
-            //Send the first packet holding the size of the coming message in bytes
-            send(serverSock, &temp, 4, 0);
-
-            //Sanitize input
-            char* newBuff = removeNewline(telnetBuff);
-
-            //Send the actual message
-            send(serverSock, newBuff, strlen(newBuff), 0); 
-
-            //Check if packet was valid
-            if(valRead < 0)
-            {
-                fprintf(stderr, "Failed to read from sock. Terminating.\n");
-                return 1;
-            }
-
-            //Sanitizr telnetBuff
-            int i;
-            for(i = 0; i < 1025; i++)
-            {
-                telnetBuff[i] = '\0';
-            }
-        }*/
-    }
-
-    //Close the sockets
-    close(telnetSock);
-    close(serverSock);
-
-    return 0; 
 } 

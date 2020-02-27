@@ -30,9 +30,8 @@ int sendAll(int s, char *buf, int *len)
 
 int main(int argc, char *argv[]) 
 { 
-    int cproxySocket = 0, daemonSocket = 0, masterSock = 0;
+    int cproxySocket = 0, daemonSocket = 0;
     int maxLen = 1025;
-    int opt = 1; 
     struct sockaddr_in cproxyAddr = {0};
     int telnetAddrLen = sizeof(cproxyAddr);
     struct sockaddr_in daemonAddr = {0};
