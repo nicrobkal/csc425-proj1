@@ -27,33 +27,6 @@ int sendAll(int s, char *buf, int *len)
     return n==-1?-1:0; // return -1 on failure, 0 on success
 } 
 
-/*
- * Removes the newline character from a given string and returns a newly allocated string
- */
-char* removeNewline(char *s)
-{
-    //Check if string is valid
-    if(s[0] != '\0')
-    {
-        //Allocate space for new string
-        char *n = malloc(strlen( s ? s : "\n" ));
-
-        //Copy string
-        if(s)
-        {
-            strcpy( n, s );
-        }
-
-        if(n[strlen(n)-1] == '\n')
-        {
-            n[strlen(n)-1]='\0';
-        }
-
-        return n;
-    }
-
-    return s;
-}
 
 int main(int argc, char *argv[]) 
 { 
@@ -167,7 +140,7 @@ int main(int argc, char *argv[])
         //Select returns one of the sockets or timeout
         int rv = select(n, &readfds, NULL, NULL, NULL);
 
-        fprintf(stderr, "Gahh: %d", n);
+        //fprintf(stderr, "Gahh: %d", n);
 
         if (rv == -1)
         {
@@ -237,41 +210,4 @@ int main(int argc, char *argv[])
             daemonBuff[i] = '\0';
         }
     }
-
-    /*
-	//Convert input to network-readable language
-    uint32_t temp = htonl(strlen(removeNewline(cproxyBuff)));
-    
-    //Checks if string is valid
-    if(strlen(removeNewline(cproxyBuff)) > 0)
-    {
-        //Send the first packet holding the size of the coming message in bytes
-        send(serverSock, &temp, 4, 0);
-
-        //Sanitize input
-        char* newBuff = removeNewline(cproxyBuff);
-
-        //Send the actual message
-        send(serverSock, newBuff, strlen(newBuff), 0); 
-
-        //Check if packet was valid
-        if(valRead < 0)
-        {
-            fprintf(stderr, "Failed to read from sock. Terminating.\n");
-            return 1;
-        }
-
-        //Sanitizr cproxyBuff
-        int i;
-        for(i = 0; i < 1025; i++)
-        {
-            cproxyBuff[i] = '\0';
-        }
-    }*/
-
-    //Close the sockets
-    close(cproxySocket);
-    close(daemonSocket);
-
-    return 0; 
 } 
