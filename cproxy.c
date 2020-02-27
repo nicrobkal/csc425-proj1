@@ -7,38 +7,30 @@
 #include <stdlib.h>
 
 /*
- * Removes the newline character from a given string and returns a newly allocated string
+ * Sends all data packets in stream
  */
-char* removeNewline(char *s)
+int sendAll(int s, char *buf, int *len)
 {
-    //Check if string is valid
-    if(s[0] != '\0')
-    {
-        //Allocate space for new string
-        char *n = malloc( strlen( s ? s : "\n" ) );
+    int total = 0;        // how many bytes we've sent
+    int bytesleft = *len; // how many we have left to send
+    int n;
 
-        //Copy string
-        if(s)
-        {
-            strcpy( n, s );
-        }
-
-        if(n[strlen(n)-1] == '\n')
-        {
-            n[strlen(n)-1]='\0';
-        }
-
-        return n;
+    while(total < *len) {
+        n = send(s, buf+total, bytesleft, 0);
+        if (n == -1) { break; }
+        total += n;
+        bytesleft -= n;
     }
 
-    return s;
+    *len = total; // return number actually sent here
+
+    return n==-1?-1:0; // return -1 on failure, 0 on success
 }
 
 int main(int argc, char *argv[]) 
 { 
     int serverSock = 0, telnetSock = 0;
-    int maxLen = 1024;
-    int opt = 1; 
+    int maxLen = 1025;
     struct sockaddr_in telnetAddr;
     int telnetAddrLen = sizeof(telnetAddr);
     struct sockaddr_in serverAddr;
@@ -61,11 +53,11 @@ int main(int argc, char *argv[])
     } 
        
     //Attach socket to port
-    if (setsockopt(telnetSock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
+    /*if (setsockopt(telnetSock, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
     { 
         perror("setsockopt");
     	return 1;
-    }
+    }*/
 
     telnetAddr.sin_family = AF_INET; 
     telnetAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -119,8 +111,7 @@ int main(int argc, char *argv[])
     }
 
     //While user is still inputting data
-    while(1)
-    {
+    while(1) {
         //Clear the set
         int n = 0;
         FD_ZERO(&readfds);
@@ -130,115 +121,66 @@ int main(int argc, char *argv[])
         FD_SET(serverSock, &readfds);
 
         //Find larger file descriptor
-        if(telnetSock > serverSock)
-        {
+        if (telnetSock > serverSock) {
             n = telnetSock + 1;
-        }
-        else
-        {
+        } else {
             n = serverSock + 1;
         }
-
-        printf("Mehh");
 
         //Select returns one of the sockets or timeout
         int rv = select(n, &readfds, NULL, NULL, NULL);
 
-        printf("Yolo");
-
-        if (rv == -1)
-        {
+        if (rv == -1) {
             perror("select");
-	        close(telnetSock);
-	        close(serverSock);
-	        return 1;
-        }
-        else if(rv == 0)
-        {
+            close(telnetSock);
+            close(serverSock);
+            return 1;
+        } else if (rv == 0) {
             printf("Timeout occurred! No data after 10.5 seconds.");
             close(telnetSock);
-	        close(serverSock);
-	        return 1;
-        }
-        else
-        {
+            close(serverSock);
+            return 1;
+        } else {
             //One or both descrptors have data
-            if(FD_ISSET(telnetSock, &readfds))
-            {
-                int valRead = read(telnetSock, telnetBuff, maxLen);
-                if(valRead == 0)
-                {
-                    getpeername(telnetSock, (struct sockaddr*)&telnetAddr , (socklen_t*)&telnetAddrLen); 
-                    printf("Host disconnected , ip %s , port %d \n" ,  
-                          inet_ntoa(telnetAddr.sin_addr) , ntohs(telnetAddr.sin_port));
-                    close(telnetSock);    
+            if (FD_ISSET(telnetSock, &readfds)) {
+                int valRead = recv(telnetSock, telnetBuff, maxLen, 0);
+                if (valRead == 0) {
+                    getpeername(telnetSock, (struct sockaddr *) &telnetAddr, (socklen_t * ) & telnetAddrLen);
+                    printf("Host disconnected , ip %s , port %d \n",
+                           inet_ntoa(telnetAddr.sin_addr), ntohs(telnetAddr.sin_port));
+                    close(telnetSock);
                 }
-                //telnetBuff[valRead] = '\0';
-                send(serverSock, telnetBuff, strlen(telnetBuff), 0);
-		        //printf("Telnet: %s", telnetBuff);
+                telnetBuff[valRead] = '\0';
+                int telnetBuffLen = strlen(telnetBuff);
+                send(serverSock, telnetBuff, telnetBuffLen, 0);
+                printf("Telnet: %s", telnetBuff);
             }
-            if(FD_ISSET(serverSock, &readfds))
-            {
-                int valRead = read(serverSock, serverBuff, maxLen);
-                if(valRead == 0)
-                {
+            if (FD_ISSET(serverSock, &readfds)) {
+                int valRead = recv(serverSock, serverBuff, maxLen, 0);
+                if (valRead == 0) {
                     int serverAddrLen = sizeof(serverAddr);
-                    getpeername(serverSock, (struct sockaddr*)&serverAddr , (socklen_t*)&serverAddrLen); 
-                    printf("Host disconnected , ip %s , port %d \n" ,  
-                          inet_ntoa(serverAddr.sin_addr) , ntohs(serverAddr.sin_port));
-                    close(serverSock);    
+                    getpeername(serverSock, (struct sockaddr *) &serverAddr, (socklen_t * ) & serverAddrLen);
+                    printf("Host disconnected , ip %s , port %d \n",
+                           inet_ntoa(serverAddr.sin_addr), ntohs(serverAddr.sin_port));
+                    close(serverSock);
                 }
-                //serverBuff[valRead] = '\0';
-                send(telnetSock, serverBuff, strlen(serverBuff), 0);
-                struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&serverAddr;
+                serverBuff[valRead] = '\0';
+                int serverBuffLen = strlen(serverBuff);
+                send(telnetSock, serverBuff, serverBuffLen, 0);
+                printf("Server: %s", serverBuff);
+                /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&serverAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];
-		        //printf("Server: %s, %s", serverBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
+		        printf("Server: %s, %s", serverBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
+                */
             }
         }
-	
-	//Sanitize buffers
-	int i;
-	for(i = 0; i < 1025; i++)
-	{
-	    telnetBuff[i] = '\0';
-	    serverBuff[i] = '\0';
-	}
-        /*
-	//Convert input to network-readable language
-        uint32_t temp = htonl(strlen(removeNewline(telnetBuff)));
-        
-        //Checks if string is valid
-        if(strlen(removeNewline(telnetBuff)) > 0)
-        {
-            //Send the first packet holding the size of the coming message in bytes
-            send(serverSock, &temp, 4, 0);
 
-            //Sanitize input
-            char* newBuff = removeNewline(telnetBuff);
-
-            //Send the actual message
-            send(serverSock, newBuff, strlen(newBuff), 0); 
-
-            //Check if packet was valid
-            if(valRead < 0)
-            {
-                fprintf(stderr, "Failed to read from sock. Terminating.\n");
-                return 1;
-            }
-
-            //Sanitizr telnetBuff
-            int i;
-            for(i = 0; i < 1025; i++)
-            {
-                telnetBuff[i] = '\0';
-            }
-        }*/
+        //Sanitize buffers
+        int i;
+        for (i = 0; i < 1025; i++) {
+            telnetBuff[i] = '\0';
+            serverBuff[i] = '\0';
+        }
     }
-
-    //Close the sockets
-    close(telnetSock);
-    close(serverSock);
-
-    return 0; 
 } 

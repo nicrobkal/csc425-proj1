@@ -7,44 +7,37 @@
 #include <stdlib.h>
 
 /*
- * Removes the newline character from a given string and returns a newly allocated string
+ * Sends all data packets in stream
  */
-char* removeNewline(char *s)
+int sendAll(int s, char *buf, int *len)
 {
-    //Check if string is valid
-    if(s[0] != '\0')
-    {
-        //Allocate space for new string
-        char *n = malloc( strlen( s ? s : "\n" ) );
+    int total = 0;        // how many bytes we've sent
+    int bytesleft = *len; // how many we have left to send
+    int n;
 
-        //Copy string
-        if(s)
-        {
-            strcpy( n, s );
-        }
-
-        if(n[strlen(n)-1] == '\n')
-        {
-            n[strlen(n)-1]='\0';
-        }
-
-        return n;
+    while(total < *len) {
+        n = send(s, buf+total, bytesleft, 0);
+        if (n == -1) { break; }
+        total += n;
+        bytesleft -= n;
     }
 
-    return s;
-}
+    *len = total; // return number actually sent here
+
+    return n==-1?-1:0; // return -1 on failure, 0 on success
+} 
+
 
 int main(int argc, char *argv[]) 
 { 
     int cproxySocket = 0, daemonSocket = 0;
-    int maxLen = 256;
-    int opt = 1; 
+    int maxLen = 1025;
     struct sockaddr_in cproxyAddr = {0};
     int telnetAddrLen = sizeof(cproxyAddr);
     struct sockaddr_in daemonAddr = {0};
     fd_set readfds;
-    char cproxyBuff[1025] = {0};
-    char daemonBuff[1025] = {0};
+    char cproxyBuff[1025];
+    char daemonBuff[1025];
 
     //Check if arguments are valid
     if(argc != 2)
@@ -77,16 +70,18 @@ int main(int argc, char *argv[])
         perror("socket");
         return 1;
     } 
-       
+
+    /* 
     //Attach socket to port
     if (setsockopt(cproxySocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
     { 
         perror("setsockopt");
     	return 1;
-    }
+    }*/
 
     cproxyAddr.sin_family = AF_INET; 
     cproxyAddr.sin_addr.s_addr = INADDR_ANY;
+    fprintf(stderr, "%d", atoi(argv[1]));
     cproxyAddr.sin_port = htons(atoi(argv[1]));
        
     //Bind ip to socket
@@ -117,7 +112,7 @@ int main(int argc, char *argv[])
         return 1;
     } 
 
-    //fprintf(stderr, "Connected to telnet!\n");
+    fprintf(stderr, "We are legion!\n");
 
     //While user is still inputting data
     while(1)
@@ -145,6 +140,8 @@ int main(int argc, char *argv[])
         //Select returns one of the sockets or timeout
         int rv = select(n, &readfds, NULL, NULL, NULL);
 
+        //fprintf(stderr, "Gahh: %d", n);
+
         if (rv == -1)
         {
             perror("select");
@@ -164,7 +161,7 @@ int main(int argc, char *argv[])
             //One or both descrptors have data
             if(FD_ISSET(cproxySocket, &readfds))
             {
-                int valRead = read(cproxySocket, cproxyBuff, maxLen);
+                int valRead = recv(cproxySocket, cproxyBuff, maxLen, 0);
                 if(valRead == 0)
                 {
                     getpeername(cproxySocket, (struct sockaddr*)&cproxyAddr , (socklen_t*)&telnetAddrLen); 
@@ -172,17 +169,19 @@ int main(int argc, char *argv[])
                           inet_ntoa(cproxyAddr.sin_addr) , ntohs(cproxyAddr.sin_port));
                     close(cproxySocket);    
                 }
-                //cproxyBuff[valRead] = '\0';
-                send(daemonSocket, cproxyBuff, strlen(cproxyBuff), 0);
-                struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
+                cproxyBuff[valRead] = '\0';
+                int cproxyBuffLen = strlen(cproxyBuff);
+                send(daemonSocket, cproxyBuff, cproxyBuffLen, 0);
+                /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];
-		        //printf("Daemon from Cproxy: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
-                //printf("Cproxy: %s", cproxyBuff);
+		        printf("Daemon from Cproxy: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
+                */
+                printf("Cproxy: aaaaa %s aaaaa", cproxyBuff);
             }
             if(FD_ISSET(daemonSocket, &readfds))
             {
-                int valRead = read(daemonSocket, daemonBuff, maxLen);
+                int valRead = recv(daemonSocket, daemonBuff, maxLen, 0);
                 if(valRead == 0)
                 {
                     int serverAddrLen = sizeof(daemonAddr);
@@ -191,13 +190,15 @@ int main(int argc, char *argv[])
                           inet_ntoa(daemonAddr.sin_addr) , ntohs(daemonAddr.sin_port));
                         close(daemonSocket);
                 }
-                //cproxyBuff[valRead] = '\0';
-                send(cproxySocket, daemonBuff, strlen(daemonBuff), 0);
-                struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
+                daemonBuff[valRead] = '\0';
+                int daemonBuffLen = strlen(daemonBuff);
+                send(cproxySocket, daemonBuff, daemonBuffLen, 0);
+                /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];
-		        //printf("Daemon from daemon: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
-                //printf("Daemon: %s", daemonBuff);
+		        printf("Daemon from daemon: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
+                */
+                printf("Daemon: %s", daemonBuff);
             }
         }
 
@@ -209,41 +210,4 @@ int main(int argc, char *argv[])
             daemonBuff[i] = '\0';
         }
     }
-
-    /*
-	//Convert input to network-readable language
-    uint32_t temp = htonl(strlen(removeNewline(cproxyBuff)));
-    
-    //Checks if string is valid
-    if(strlen(removeNewline(cproxyBuff)) > 0)
-    {
-        //Send the first packet holding the size of the coming message in bytes
-        send(serverSock, &temp, 4, 0);
-
-        //Sanitize input
-        char* newBuff = removeNewline(cproxyBuff);
-
-        //Send the actual message
-        send(serverSock, newBuff, strlen(newBuff), 0); 
-
-        //Check if packet was valid
-        if(valRead < 0)
-        {
-            fprintf(stderr, "Failed to read from sock. Terminating.\n");
-            return 1;
-        }
-
-        //Sanitizr cproxyBuff
-        int i;
-        for(i = 0; i < 1025; i++)
-        {
-            cproxyBuff[i] = '\0';
-        }
-    }*/
-
-    //Close the sockets
-    close(cproxySocket);
-    close(daemonSocket);
-
-    return 0; 
 } 
