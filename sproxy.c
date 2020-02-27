@@ -111,7 +111,7 @@ int main(int argc, char *argv[])
         return 1; 
     }
 
-    //fprintf(stderr, "Connected to telnet!\n");
+    fprintf(stderr, "We are legion!\n");
 
     //While user is still inputting data
     while(1)
@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
                 char str[INET_ADDRSTRLEN];
 		        printf("Daemon from Cproxy: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
                 */
-                fprintf(stderr, "Cproxy: aaaaa %s aaaaa", cproxyBuff);
+                printf("Cproxy: aaaaa %s aaaaa", cproxyBuff);
             }
             if(FD_ISSET(daemonSocket, &readfds))
             {
