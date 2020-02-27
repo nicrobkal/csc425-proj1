@@ -63,6 +63,7 @@ int main(int argc, char *argv[])
 
     cproxyAddr.sin_family = AF_INET; 
     cproxyAddr.sin_addr.s_addr = INADDR_ANY;
+    fprintf(stderr, "%d", atoi(argv[1]));
     cproxyAddr.sin_port = htons(atoi(argv[1]));
        
     //Bind ip to socket
