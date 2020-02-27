@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
     fd_set readfds;
     char cproxyBuff[1025];
     char daemonBuff[1025];
+    int opt = 1;
 
     //Check if arguments are valid
     if(argc != 2)
@@ -49,20 +50,20 @@ int main(int argc, char *argv[])
     //Create initial socket
     if ((daemonSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
     { 
-        perror("socket"); 
+        perror("socket");
         return 1;
     } 
 
     daemonAddr.sin_family = AF_INET;
     daemonAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    daemonAddr.sin_port = htons(23); 
+    daemonAddr.sin_port = htons(23);
 
-    /*//Bind IP to socket
-    if(inet_pton(AF_INET, (struct sockaddr *)&serverAddr, &serverAddr.sin_addr) <=0 )  
+    //Bind IP to socket
+    if(inet_pton(AF_INET, (struct sockaddr *)&daemonAddr, &daemonAddr.sin_addr) <=0 )  
     { 
         perror("inet_pton"); 
         return 1;
-    }*/
+    }
    
     //Connect to server
     if (connect(daemonSocket, (struct sockaddr *)&daemonAddr, sizeof(daemonAddr)) < 0) 
@@ -78,13 +79,12 @@ int main(int argc, char *argv[])
         return 1;
     } 
 
-    /* 
     //Attach socket to port
     if (setsockopt(cproxySocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
     { 
         perror("setsockopt");
     	return 1;
-    }*/
+    }
 
     cproxyAddr.sin_family = AF_INET; 
     cproxyAddr.sin_addr.s_addr = INADDR_ANY;
