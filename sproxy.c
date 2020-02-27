@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
                 char str[INET_ADDRSTRLEN];
 		        printf("Daemon from Cproxy: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
                 */
-                printf("Cproxy: saaaaa%saaaaa", cproxyBuff);
+                fprintf(stderr, "Cproxy: aaaaa %s aaaaa", cproxyBuff);
             }
             if(FD_ISSET(daemonSocket, &readfds))
             {
