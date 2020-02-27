@@ -30,7 +30,7 @@ int sendAll(int s, char *buf, int *len)
 
 int main(int argc, char *argv[]) 
 { 
-    int cproxySocket = 0, daemonSocket = 0;
+    int cproxySocket = 0, daemonSocket = 0, cAccept = 0;
     int maxLen = 1025;
     struct sockaddr_in cproxyAddr = {0};
     int telnetAddrLen = sizeof(cproxyAddr);
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     daemonAddr.sin_port = htons(23);
 
     //Bind IP to socket
-    if(inet_pton(AF_INET, (struct sockaddr *)&daemonAddr, &daemonAddr.sin_addr) <=0 )  
+    if(inet_pton(AF_INET, "127.0.0.1", &daemonAddr.sin_addr) <=0 )  
     { 
         perror("inet_pton"); 
         return 1;
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
     }
 
     //Accept the client
-    if ((cproxySocket = accept(cproxySocket, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen))<0) 
+    if ((cAccept = accept(cproxySocket, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
         perror("accept");
         return 1;
@@ -122,15 +122,15 @@ int main(int argc, char *argv[])
         FD_ZERO(&readfds);
 
         //Add descriptors
-        FD_SET(cproxySocket, &readfds);
+        FD_SET(cAccept, &readfds);
         FD_SET(daemonSocket, &readfds);
 
         //fprintf(stderr, "cproxySocket: %d, daemonSocket: %d\n", cproxySocket, daemonSocket);
 
         //Find larger file descriptor
-        if(cproxySocket > daemonSocket)
+        if(cAccept > daemonSocket)
         {
-            n = cproxySocket + 1;
+            n = cAccept + 1;
         }
         else
         {
@@ -145,33 +145,32 @@ int main(int argc, char *argv[])
         if (rv == -1)
         {
             perror("select");
-            close(cproxySocket);
+            close(cAccept);
             close(daemonSocket);
             return 1;
         }
         else if(rv == 0)
         {
             printf("Timeout occurred! No data after 10.5 seconds.\n");
-            close(cproxySocket);
+            close(cAccept);
             close(daemonSocket);
             return 1;
         }
         else
         {
             //One or both descrptors have data
-            if(FD_ISSET(cproxySocket, &readfds))
+            if(FD_ISSET(cAccept, &readfds))
             {
-                int valRead = recv(cproxySocket, cproxyBuff, maxLen, 0);
+                int valRead = recv(cAccept, cproxyBuff, maxLen, 0);
                 if(valRead == 0)
                 {
-                    getpeername(cproxySocket, (struct sockaddr*)&cproxyAddr , (socklen_t*)&telnetAddrLen); 
+                    getpeername(cAccept, (struct sockaddr*)&cproxyAddr , (socklen_t*)&telnetAddrLen); 
                     printf("Host disconnected , ip %s , port %d \n" ,  
                           inet_ntoa(cproxyAddr.sin_addr) , ntohs(cproxyAddr.sin_port));
-                    close(cproxySocket);    
+                    close(cAccept);    
                 }
-                cproxyBuff[valRead] = '\0';
-                int cproxyBuffLen = strlen(cproxyBuff);
-                send(daemonSocket, cproxyBuff, cproxyBuffLen, 0);
+                //cproxyBuff[valRead] = '\0';
+                send(daemonSocket, cproxyBuff, valRead, 0);
                 /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];
@@ -190,9 +189,9 @@ int main(int argc, char *argv[])
                           inet_ntoa(daemonAddr.sin_addr) , ntohs(daemonAddr.sin_port));
                         close(daemonSocket);
                 }
-                daemonBuff[valRead] = '\0';
-                int daemonBuffLen = strlen(daemonBuff);
-                send(cproxySocket, daemonBuff, daemonBuffLen, 0);
+                //daemonBuff[valRead] = '\0';
+                //int daemonBuffLen = strlen(daemonBuff);
+                send(cAccept, daemonBuff, valRead, 0);
                 /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;
                 char str[INET_ADDRSTRLEN];

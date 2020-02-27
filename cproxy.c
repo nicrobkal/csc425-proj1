@@ -14,7 +14,6 @@ int sendAll(int s, char *buf, int *len)
     int total = 0;        // how many bytes we've sent
     int bytesleft = *len; // how many we have left to send
     int n;
-    int opt = 1;
 
     while(total < *len) {
         n = send(s, buf+total, bytesleft, 0);
@@ -30,7 +29,7 @@ int sendAll(int s, char *buf, int *len)
 
 int main(int argc, char *argv[]) 
 { 
-    int serverSock = 0, telnetSock = 0;
+    int serverSock = 0, telnetSock = 0, telnetAccept = 0;
     int maxLen = 1025;
     struct sockaddr_in telnetAddr;
     int telnetAddrLen = sizeof(telnetAddr);
@@ -79,7 +78,7 @@ int main(int argc, char *argv[])
     }
 
     //Accept the client
-    if ((telnetSock = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
+    if ((telnetAccept = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
         perror("accept");
         return 1;
@@ -117,12 +116,12 @@ int main(int argc, char *argv[])
         FD_ZERO(&readfds);
 
         //Add descriptors
-        FD_SET(telnetSock, &readfds);
+        FD_SET(telnetAccept, &readfds);
         FD_SET(serverSock, &readfds);
 
         //Find larger file descriptor
-        if (telnetSock > serverSock) {
-            n = telnetSock + 1;
+        if (telnetAccept > serverSock) {
+            n = telnetAccept + 1;
         } else {
             n = serverSock + 1;
         }
@@ -132,23 +131,23 @@ int main(int argc, char *argv[])
 
         if (rv == -1) {
             perror("select");
-            close(telnetSock);
+            close(telnetAccept);
             close(serverSock);
             return 1;
         } else if (rv == 0) {
             printf("Timeout occurred! No data after 10.5 seconds.");
-            close(telnetSock);
+            close(telnetAccept);
             close(serverSock);
             return 1;
         } else {
             //One or both descrptors have data
-            if (FD_ISSET(telnetSock, &readfds)) {
-                int valRead = recv(telnetSock, telnetBuff, maxLen, 0);
+            if (FD_ISSET(telnetAccept, &readfds)) {
+                int valRead = recv(telnetAccept, telnetBuff, maxLen, 0);
                 if (valRead == 0) {
-                    getpeername(telnetSock, (struct sockaddr *) &telnetAddr, (socklen_t * ) & telnetAddrLen);
+                    getpeername(telnetAccept, (struct sockaddr *) &telnetAddr, (socklen_t * ) & telnetAddrLen);
                     printf("Host disconnected , ip %s , port %d \n",
                            inet_ntoa(telnetAddr.sin_addr), ntohs(telnetAddr.sin_port));
-                    close(telnetSock);
+                    close(telnetAccept);
                 }
                 telnetBuff[valRead] = '\0';
                 int telnetBuffLen = strlen(telnetBuff);
@@ -166,7 +165,7 @@ int main(int argc, char *argv[])
                 }
                 serverBuff[valRead] = '\0';
                 int serverBuffLen = strlen(serverBuff);
-                send(telnetSock, serverBuff, serverBuffLen, 0);
+                send(telnetAccept, serverBuff, serverBuffLen, 0);
                 printf("Server: %s", serverBuff);
                 /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&serverAddr;
                 struct in_addr ipAddr = pV4Addr->sin_addr;

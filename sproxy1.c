@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     { 
         printf("\nInvalid address. Terminating.\n"); 
         return 1; 
-    } 
+    }
    
     //Connect to server
     if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
