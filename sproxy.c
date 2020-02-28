@@ -141,14 +141,14 @@ int main(int argc, char *argv[])
             if (rv == -1)
             {
                 perror("select");
-                close(cAccept);
+                close(cproxySocket);
                 close(daemonSocket);
                 return 1;
             }
             else if(rv == 0)
             {
                 printf("Timeout occurred! No data after 10.5 seconds.\n");
-                close(cAccept);
+                close(cproxySocket);
                 close(daemonSocket);
                 return 1;
             }
@@ -163,13 +163,13 @@ int main(int argc, char *argv[])
                         getpeername(cAccept, (struct sockaddr*)&cproxyAddr , (socklen_t*)&telnetAddrLen); 
                         printf("Host disconnected , ip %s , port %d \n" ,  
                             inet_ntoa(cproxyAddr.sin_addr) , ntohs(cproxyAddr.sin_port));
-                        close(cAccept);
+                        close(cproxySocket);
                         close(daemonSocket); 
                         break; 
                     }
 
                     if(strcmp(cproxyBuff, "exit") == 0 || strcmp(cproxyBuff, "logout") == 0){
-                        close(cAccept);
+                        close(cproxySocket);
                         close(daemonSocket);
                         break;
                     }
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
                         printf("Host disconnected , ip %s , port %d \n" ,  
                             inet_ntoa(daemonAddr.sin_addr) , ntohs(daemonAddr.sin_port));
                             close(daemonSocket);
-                            close(cAccept);
+                            close(cproxySocket);
                             break;
                     }
                     send(cAccept, daemonBuff, valRead, 0);

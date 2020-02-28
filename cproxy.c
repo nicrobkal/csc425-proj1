@@ -127,12 +127,12 @@ int main(int argc, char *argv[])
 
             if (rv == -1) {
                 perror("select");
-                close(telnetAccept);
+                close(telnetSock);
                 close(serverSock);
                 return 1;
             } else if (rv == 0) {
                 printf("Timeout occurred! No data after 10.5 seconds.");
-                close(telnetAccept);
+                close(telnetSock);
                 close(serverSock);
                 return 1;
             } else {
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
                         getpeername(telnetAccept, (struct sockaddr *) &telnetAddr, (socklen_t * ) & telnetAddrLen);
                         printf("Host disconnected , ip %s , port %d \n",
                             inet_ntoa(telnetAddr.sin_addr), ntohs(telnetAddr.sin_port));
-                        close(telnetAccept);
+                        close(telnetSock);
                         close(serverSock);
                         break;
                     }
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
                     send(serverSock, telnetBuff, valRead, 0);
 
                     if(strcmp(telnetBuff, "exit") == 0 || strcmp(telnetBuff, "logout") == 0){
-                        close(telnetAccept);
+                        close(telnetSock);
                         close(serverSock);
                         break;
                     }
@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
                         getpeername(serverSock, (struct sockaddr *) &serverAddr, (socklen_t * ) & serverAddrLen);
                         printf("Host disconnected , ip %s , port %d \n",
                             inet_ntoa(serverAddr.sin_addr), ntohs(serverAddr.sin_port));
-                        close(telnetAccept);
+                        close(telnetSock);
                         close(serverSock);
                         break;
                     }
