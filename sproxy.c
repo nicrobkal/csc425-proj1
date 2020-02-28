@@ -47,58 +47,58 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    //Create initial socket
-    if ((daemonSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-    { 
-        perror("socket");
-        return 1;
-    } 
+    while(1)
+    {   
+        //Create initial socket
+        if ((daemonSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+        { 
+            perror("socket");
+            return 1;
+        } 
 
-    daemonAddr.sin_family = AF_INET;
-    daemonAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    daemonAddr.sin_port = htons(23);
+        daemonAddr.sin_family = AF_INET;
+        daemonAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+        daemonAddr.sin_port = htons(23);
 
-    //Bind IP to socket
-    if(inet_pton(AF_INET, "127.0.0.1", &daemonAddr.sin_addr) <=0 )  
-    { 
-        perror("inet_pton"); 
-        return 1;
-    }
-   
-    //Connect to server
-    if (connect(daemonSocket, (struct sockaddr *)&daemonAddr, sizeof(daemonAddr)) < 0) 
-    { 
-        perror("connect");
-        return 1; 
-    }
-
-    //Create socket file descriptor
-    if ((cproxySocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
-    { 
-        perror("socket");
-        return 1;
-    } 
-
-    //Attach socket to port
-    if (setsockopt(cproxySocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
-    { 
-        perror("setsockopt");
-    	return 1;
-    }
-
-    cproxyAddr.sin_family = AF_INET; 
-    cproxyAddr.sin_addr.s_addr = INADDR_ANY;
-    cproxyAddr.sin_port = htons(atoi(argv[1]));
-       
-    //Bind ip to socket
-    if(bind(cproxySocket, (struct sockaddr *)&cproxyAddr, sizeof(cproxyAddr)) < 0)
-    {
-        perror("bind");
-        return 1;
-    }
-
-    while(1){
+        //Bind IP to socket
+        if(inet_pton(AF_INET, "127.0.0.1", &daemonAddr.sin_addr) <=0 )  
+        { 
+            perror("inet_pton"); 
+            return 1;
+        }
     
+        //Connect to server
+        if (connect(daemonSocket, (struct sockaddr *)&daemonAddr, sizeof(daemonAddr)) < 0) 
+        { 
+            perror("connect");
+            return 1; 
+        }
+
+        //Create socket file descriptor
+        if ((cproxySocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+        { 
+            perror("socket");
+            return 1;
+        } 
+
+        //Attach socket to port
+        if (setsockopt(cproxySocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
+        { 
+            perror("setsockopt");
+            return 1;
+        }
+
+        cproxyAddr.sin_family = AF_INET; 
+        cproxyAddr.sin_addr.s_addr = INADDR_ANY;
+        cproxyAddr.sin_port = htons(atoi(argv[1]));
+        
+        //Bind ip to socket
+        if(bind(cproxySocket, (struct sockaddr *)&cproxyAddr, sizeof(cproxyAddr)) < 0)
+        {
+            perror("bind");
+            return 1;
+        }
+
         //Enable listening on given socket
         if (listen(cproxySocket, 1) < 0) 
         { 
@@ -163,7 +163,8 @@ int main(int argc, char *argv[])
                         getpeername(cAccept, (struct sockaddr*)&cproxyAddr , (socklen_t*)&telnetAddrLen); 
                         printf("Host disconnected , ip %s , port %d \n" ,  
                             inet_ntoa(cproxyAddr.sin_addr) , ntohs(cproxyAddr.sin_port));
-                        close(cAccept);   
+                        close(cAccept);
+                        close(daemonSocket); 
                         break; 
                     }
 
@@ -184,6 +185,7 @@ int main(int argc, char *argv[])
                         printf("Host disconnected , ip %s , port %d \n" ,  
                             inet_ntoa(daemonAddr.sin_addr) , ntohs(daemonAddr.sin_port));
                             close(daemonSocket);
+                            close(cAccept);
                             break;
                     }
                     send(cAccept, daemonBuff, valRead, 0);

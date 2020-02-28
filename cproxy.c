@@ -45,51 +45,52 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    while(1)
+    {
         //Create initial socket
-    if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-    {
-        perror("socket"); 
-        return 1;
-    }
-   
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = inet_addr(argv[2]);
-    serverAddr.sin_port = htons(atoi(argv[3]));
+        if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+        {
+            perror("socket"); 
+            return 1;
+        }
+    
+        serverAddr.sin_family = AF_INET;
+        serverAddr.sin_addr.s_addr = inet_addr(argv[2]);
+        serverAddr.sin_port = htons(atoi(argv[3]));
 
-    //Bind IP to socket
-    if(inet_pton(AF_INET, argv[2], &serverAddr.sin_addr) <=0 )  
-    { 
-        perror("inet_pton"); 
-        return 1;
-    }
-   
-    //Connect to server
-    if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
-    { 
-        perror("connect");
-        return 1; 
-    }
+        //Bind IP to socket
+        if(inet_pton(AF_INET, argv[2], &serverAddr.sin_addr) <=0 )  
+        { 
+            perror("inet_pton"); 
+            return 1;
+        }
+    
+        //Connect to server
+        if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
+        { 
+            perror("connect");
+            return 1; 
+        }
 
-    //Create socket file descriptor
-    if ((telnetSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
-    { 
-        perror("socket");
-        return 1;
-    } 
-       
+        //Create socket file descriptor
+        if ((telnetSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+        { 
+            perror("socket");
+            return 1;
+        } 
+        
 
-    telnetAddr.sin_family = AF_INET; 
-    telnetAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    telnetAddr.sin_port = htons(atoi(argv[1]));
-       
-    //Bind ip to socket
-    if(bind(telnetSock, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) 
-    {
-        perror("bind");
-        return 1;
-    }
+        telnetAddr.sin_family = AF_INET; 
+        telnetAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+        telnetAddr.sin_port = htons(atoi(argv[1]));
+        
+        //Bind ip to socket
+        if(bind(telnetSock, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) 
+        {
+            perror("bind");
+            return 1;
+        }
 
-    while(1){
         //Enable listening on given socket
         if (listen(telnetSock, 1) < 0) 
         { 
@@ -143,6 +144,8 @@ int main(int argc, char *argv[])
                         printf("Host disconnected , ip %s , port %d \n",
                             inet_ntoa(telnetAddr.sin_addr), ntohs(telnetAddr.sin_port));
                         close(telnetAccept);
+                        close(serverSock);
+                        break;
                     }
                     telnetBuff[valRead] = '\0';
                     
@@ -161,7 +164,9 @@ int main(int argc, char *argv[])
                         getpeername(serverSock, (struct sockaddr *) &serverAddr, (socklen_t * ) & serverAddrLen);
                         printf("Host disconnected , ip %s , port %d \n",
                             inet_ntoa(serverAddr.sin_addr), ntohs(serverAddr.sin_port));
+                        close(telnetAccept);
                         close(serverSock);
+                        break;
                     }
                     serverBuff[valRead] = '\0';
                     send(telnetAccept, serverBuff, valRead, 0);
