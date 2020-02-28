@@ -88,7 +88,6 @@ int main(int argc, char *argv[])
 
     cproxyAddr.sin_family = AF_INET; 
     cproxyAddr.sin_addr.s_addr = INADDR_ANY;
-    fprintf(stderr, "%d", atoi(argv[1]));
     cproxyAddr.sin_port = htons(atoi(argv[1]));
        
     //Bind ip to socket
@@ -97,116 +96,108 @@ int main(int argc, char *argv[])
         perror("bind");
         return 1;
     }
+
+    while(1){
     
-    //Enable listening on given socket
-    if (listen(cproxySocket, 1) < 0) 
-    { 
-        perror("listen"); 
-        exit(EXIT_FAILURE); 
-    }
-
-    //Accept the client
-    if ((cAccept = accept(cproxySocket, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen))<0) 
-    { 
-        perror("accept");
-        return 1;
-    }
-
-    fprintf(stderr, "We are legion!\n");
-
-    //While user is still inputting data
-    while(1)
-    {
-        //Clear the set
-        int n = 0;
-        FD_ZERO(&readfds);
-
-        //Add descriptors
-        FD_SET(cAccept, &readfds);
-        FD_SET(daemonSocket, &readfds);
-
-        //fprintf(stderr, "cproxySocket: %d, daemonSocket: %d\n", cproxySocket, daemonSocket);
-
-        //Find larger file descriptor
-        if(cAccept > daemonSocket)
-        {
-            n = cAccept + 1;
-        }
-        else
-        {
-            n = daemonSocket + 1;
+        //Enable listening on given socket
+        if (listen(cproxySocket, 1) < 0) 
+        { 
+            perror("listen"); 
+            exit(EXIT_FAILURE); 
         }
 
-        //Select returns one of the sockets or timeout
-        int rv = select(n, &readfds, NULL, NULL, NULL);
-
-        //fprintf(stderr, "Gahh: %d", n);
-
-        if (rv == -1)
-        {
-            perror("select");
-            close(cAccept);
-            close(daemonSocket);
+        //Accept the client
+        if ((cAccept = accept(cproxySocket, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen))<0) 
+        { 
+            perror("accept");
             return 1;
         }
-        else if(rv == 0)
+
+        //While user is still inputting data
+        while(1)
         {
-            printf("Timeout occurred! No data after 10.5 seconds.\n");
-            close(cAccept);
-            close(daemonSocket);
-            return 1;
-        }
-        else
-        {
-            //One or both descrptors have data
-            if(FD_ISSET(cAccept, &readfds))
+            //Clear the set
+            int n = 0;
+            FD_ZERO(&readfds);
+
+            //Add descriptors
+            FD_SET(cAccept, &readfds);
+            FD_SET(daemonSocket, &readfds);
+
+            //Find larger file descriptor
+            if(cAccept > daemonSocket)
             {
-                int valRead = recv(cAccept, cproxyBuff, maxLen, 0);
-                if(valRead == 0)
-                {
-                    getpeername(cAccept, (struct sockaddr*)&cproxyAddr , (socklen_t*)&telnetAddrLen); 
-                    printf("Host disconnected , ip %s , port %d \n" ,  
-                          inet_ntoa(cproxyAddr.sin_addr) , ntohs(cproxyAddr.sin_port));
-                    close(cAccept);    
-                }
-                //cproxyBuff[valRead] = '\0';
-                send(daemonSocket, cproxyBuff, valRead, 0);
-                /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
-                struct in_addr ipAddr = pV4Addr->sin_addr;
-                char str[INET_ADDRSTRLEN];
-		        printf("Daemon from Cproxy: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
-                */
-                printf("Cproxy: aaaaa %s aaaaa", cproxyBuff);
+                n = cAccept + 1;
             }
-            if(FD_ISSET(daemonSocket, &readfds))
+            else
             {
-                int valRead = recv(daemonSocket, daemonBuff, maxLen, 0);
-                if(valRead == 0)
+                n = daemonSocket + 1;
+            }
+
+            //Select returns one of the sockets or timeout
+            int rv = select(n, &readfds, NULL, NULL, NULL);
+
+
+            if (rv == -1)
+            {
+                perror("select");
+                close(cAccept);
+                close(daemonSocket);
+                return 1;
+            }
+            else if(rv == 0)
+            {
+                printf("Timeout occurred! No data after 10.5 seconds.\n");
+                close(cAccept);
+                close(daemonSocket);
+                return 1;
+            }
+            else
+            {
+                //One or both descrptors have data
+                if(FD_ISSET(cAccept, &readfds))
                 {
-                    int serverAddrLen = sizeof(daemonAddr);
-                    getpeername(daemonSocket, (struct sockaddr*)&daemonAddr , (socklen_t*)&serverAddrLen); 
-                    printf("Host disconnected , ip %s , port %d \n" ,  
-                          inet_ntoa(daemonAddr.sin_addr) , ntohs(daemonAddr.sin_port));
+                    int valRead = recv(cAccept, cproxyBuff, maxLen, 0);
+                    if(valRead <= 0)
+                    {
+                        getpeername(cAccept, (struct sockaddr*)&cproxyAddr , (socklen_t*)&telnetAddrLen); 
+                        printf("Host disconnected , ip %s , port %d \n" ,  
+                            inet_ntoa(cproxyAddr.sin_addr) , ntohs(cproxyAddr.sin_port));
+                        close(cAccept);   
+                        break; 
+                    }
+
+                    if(strcmp(cproxyBuff, "exit") == 0 || strcmp(cproxyBuff, "logout") == 0){
+                        close(cAccept);
                         close(daemonSocket);
+                        break;
+                    }
+                    send(daemonSocket, cproxyBuff, valRead, 0);
                 }
-                //daemonBuff[valRead] = '\0';
-                //int daemonBuffLen = strlen(daemonBuff);
-                send(cAccept, daemonBuff, valRead, 0);
-                /*struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&daemonAddr;
-                struct in_addr ipAddr = pV4Addr->sin_addr;
-                char str[INET_ADDRSTRLEN];
-		        printf("Daemon from daemon: %s, %s\n", daemonBuff, inet_ntop(AF_INET, &ipAddr, str, INET_ADDRSTRLEN));
-                */
-                printf("Daemon: %s", daemonBuff);
+                if(FD_ISSET(daemonSocket, &readfds))
+                {
+                    int valRead = recv(daemonSocket, daemonBuff, maxLen, 0);
+                    if(valRead <= 0)
+                    {
+                        int serverAddrLen = sizeof(daemonAddr);
+                        getpeername(daemonSocket, (struct sockaddr*)&daemonAddr , (socklen_t*)&serverAddrLen); 
+                        printf("Host disconnected , ip %s , port %d \n" ,  
+                            inet_ntoa(daemonAddr.sin_addr) , ntohs(daemonAddr.sin_port));
+                            close(daemonSocket);
+                            break;
+                    }
+                    send(cAccept, daemonBuff, valRead, 0);
+
+                }
             }
-        }
 
             //Sanitize buffers
-        int i;
-        for(i = 0; i < 1025; i++)
-        {
-            cproxyBuff[i] = '\0';
-            daemonBuff[i] = '\0';
+            int i;
+            for(i = 0; i < 1025; i++)
+            {
+                cproxyBuff[i] = '\0';
+                daemonBuff[i] = '\0';
+            }
         }
-    }
+    }   
 } 
