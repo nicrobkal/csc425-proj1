@@ -16,7 +16,7 @@ int connectToServer(char* targetIP, char* targetPort)
     struct sockaddr_in sproxyAddr;
 
     //Create initial socket
-    if ((sproxySocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+    if ((sproxySocket = socket(AF_INET, SOCK_STREAM, 0)) <= 0) 
     {
         perror("socket");
         return -1;
@@ -35,8 +35,8 @@ int connectToServer(char* targetIP, char* targetPort)
 
     //Connect to server
     if (connect(sproxySocket, (struct sockaddr*)&sproxyAddr, sizeof(sproxyAddr)) < 0) 
-    { 
-        perror("Connection failed: connect");
+    {
+        perror("connect");
         return -1;
     }
 
@@ -52,8 +52,8 @@ int acceptTelnetConnection(int* telnetSocket, struct sockaddr_in* telnetAddr, ch
     int telnetAccept = 0;
 
     //Create socket file descriptor
-    if ((*telnetSocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
-    { 
+    if ((*telnetSocket = socket(AF_INET, SOCK_STREAM, 0)) <= 0)
+    {
         perror("socket");
         return -1;
     }
@@ -72,12 +72,12 @@ int acceptTelnetConnection(int* telnetSocket, struct sockaddr_in* telnetAddr, ch
     //Enable listening on given socket
     if (listen(*telnetSocket, 1) < 0) 
     { 
-        perror("listen"); 
-        exit(EXIT_FAILURE); 
+        perror("listen");
+        exit(EXIT_FAILURE);
     }
 
     //Accept the client
-    if ((telnetAccept = accept(*telnetSocket, (struct sockaddr *)telnetAddr, (socklen_t*)sizeof(telnetAddr)))<0) 
+    if ((telnetAccept = accept(*telnetSocket, (struct sockaddr *)telnetAddr, (socklen_t*)sizeof(telnetAddr))) < 0) 
     {
         perror("accept");
         return -1;

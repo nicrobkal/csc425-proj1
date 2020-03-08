@@ -12,14 +12,14 @@ int connectToDaemon()
     struct sockaddr_in daemonAddr;
 
     //Create initial socket
-    if ((daemonSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+    if ((daemonSocket = socket(AF_INET, SOCK_STREAM, 0)) <= 0) 
     {
         perror("socket");
         return -1;
     }
 
     daemonAddr.sin_family = AF_INET;
-    //daemonAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    daemonAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
     daemonAddr.sin_port = htons(23);
 
     //Bind IP to socket
@@ -44,7 +44,7 @@ int acceptClientConnection(int* cproxySocket, struct sockaddr_in* cproxyAddr, ch
     int cAccept = 0, opt = 1;
 
     //Create socket file descriptor
-    if ((*cproxySocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+    if ((*cproxySocket = socket(AF_INET, SOCK_STREAM, 0)) <= 0) 
     { 
         perror("socket");
         return -1;
