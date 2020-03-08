@@ -6,33 +6,34 @@
 #include <string.h> 
 #include <stdlib.h>
 
-int connectToDaemon(struct sockaddr_in* daemonAddr)
+int connectToDaemon()
 {
     int daemonSocket = 0;
+    struct sockaddr_in daemonAddr;
 
     //Create initial socket
     if ((daemonSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
     {
         perror("socket");
-        return 1;
+        return -1;
     }
 
-    daemonAddr->sin_family = AF_INET;
-    daemonAddr->sin_addr.s_addr = inet_addr("127.0.0.1");
-    daemonAddr->sin_port = htons(23);
+    daemonAddr.sin_family = AF_INET;
+    //daemonAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    daemonAddr.sin_port = htons(23);
 
     //Bind IP to socket
-    if(inet_pton(AF_INET, "127.0.0.1", &daemonAddr->sin_addr) <=0 )  
-    { 
-        perror("inet_pton"); 
-        return 1;
+    if(inet_pton(AF_INET, "127.0.0.1", &daemonAddr.sin_addr) <= 0)  
+    {
+        perror("inet_pton");
+        return -1;
     }
 
     //Connect to server
-    if (connect(daemonSocket, (struct sockaddr *)&daemonAddr, sizeof(daemonAddr)) < 0) 
+    if (connect(daemonSocket, (struct sockaddr *)&daemonAddr, sizeof(daemonAddr)) < 0)
     { 
         perror("connect");
-        return 1; 
+        return -1; 
     }
 
     return daemonSocket;
@@ -46,14 +47,14 @@ int acceptClientConnection(int* cproxySocket, struct sockaddr_in* cproxyAddr, ch
     if ((*cproxySocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
         perror("socket");
-        return 1;
+        return -1;
     } 
 
     //Attach socket to port
     if (setsockopt(*cproxySocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)))
     { 
         perror("setsockopt");
-        return 1;
+        return -1;
     }
 
     cproxyAddr->sin_family = AF_INET; 
@@ -64,7 +65,7 @@ int acceptClientConnection(int* cproxySocket, struct sockaddr_in* cproxyAddr, ch
     if(bind(*cproxySocket, (struct sockaddr *)cproxyAddr, sizeof(*cproxyAddr)) < 0)
     {
         perror("bind");
-        return 1;
+        return -1;
     }
 
     //Enable listening on given socket
@@ -78,7 +79,7 @@ int acceptClientConnection(int* cproxySocket, struct sockaddr_in* cproxyAddr, ch
     if ((cAccept = accept(*cproxySocket, (struct sockaddr *)cproxyAddr, (socklen_t*)sizeof(cproxyAddr))) < 0) 
     { 
         perror("accept");
-        return 1;
+        return -1;
     }
 
     return cAccept;
@@ -90,8 +91,7 @@ int main(int argc, char *argv[])
     *cproxySocket = 0;
     int daemonSocket = 0, cAccept = 0;
     int maxLen = 1025;
-    struct sockaddr_in* cproxyAddr = malloc(sizeof(struct sockaddr_in));;
-    struct sockaddr_in* daemonAddr = malloc(sizeof(struct sockaddr_in));
+    struct sockaddr_in cproxyAddr;
     fd_set readfds;
     char cproxyBuff[1025];
     char daemonBuff[1025];
@@ -105,9 +105,19 @@ int main(int argc, char *argv[])
 
     while(1)
     {
-        daemonSocket = connectToDaemon(daemonAddr);
+        daemonSocket = connectToDaemon();
 
-        cAccept = acceptClientConnection(cproxySocket, cproxyAddr, argv[1]);
+        if(daemonSocket == -1)
+        {
+            return -1;
+        }
+
+        cAccept = acceptClientConnection(cproxySocket, &cproxyAddr, argv[1]);
+
+        if(cAccept == -1)
+        {
+            return -1;
+        }
 
         //While user is still inputting data
         while(1)
@@ -156,9 +166,6 @@ int main(int argc, char *argv[])
                     int valRead = recv(cAccept, cproxyBuff, maxLen, 0);
                     if(valRead <= 0)
                     {
-                        getpeername(cAccept, (struct sockaddr*)cproxyAddr , (socklen_t*)sizeof(cproxyAddr)); 
-                        printf("Host disconnected , ip %s , port %d \n" ,  
-                            inet_ntoa(cproxyAddr->sin_addr) , ntohs(cproxyAddr->sin_port));
                         close(*cproxySocket);
                         close(daemonSocket); 
                         break; 
@@ -177,9 +184,9 @@ int main(int argc, char *argv[])
                     int valRead = recv(daemonSocket, daemonBuff, maxLen, 0);
                     if(valRead <= 0)
                     {
-                        getpeername(daemonSocket, (struct sockaddr*)daemonAddr , (socklen_t*)sizeof(daemonAddr)); 
-                        printf("Host disconnected , ip %s , port %d \n" ,  
-                            inet_ntoa(daemonAddr->sin_addr) , ntohs(daemonAddr->sin_port));
+                        //getpeername(daemonSocket, (struct sockaddr*)daemonAddr , (socklen_t*)sizeof(daemonAddr)); 
+                        //printf("Host disconnected , ip %s , port %d \n" ,  
+                            //inet_ntoa(daemonAddr->sin_addr) , ntohs(daemonAddr->sin_port));
                             close(daemonSocket);
                             close(*cproxySocket);
                             break;

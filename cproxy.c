@@ -10,9 +10,10 @@
  * Function to connect to the server
  *  Returns the socket value
  */
-int connectToServer(struct sockaddr_in* sproxyAddr, char* targetIP, char* targetPort)
+int connectToServer(char* targetIP, char* targetPort)
 {
     int sproxySocket = 0;
+    struct sockaddr_in sproxyAddr;
 
     //Create initial socket
     if ((sproxySocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
@@ -21,19 +22,19 @@ int connectToServer(struct sockaddr_in* sproxyAddr, char* targetIP, char* target
         return -1;
     }
 
-    sproxyAddr->sin_family = AF_INET;
-    sproxyAddr->sin_addr.s_addr = inet_addr(targetIP);
-    sproxyAddr->sin_port = htons(atoi(targetPort));
+    sproxyAddr.sin_family = AF_INET;
+    sproxyAddr.sin_addr.s_addr = inet_addr(targetIP);
+    sproxyAddr.sin_port = htons(atoi(targetPort));
 
     //Bind IP to socket
-    if(inet_pton(AF_INET, targetIP, &sproxyAddr->sin_addr) <= 0)
+    if(inet_pton(AF_INET, targetIP, &sproxyAddr.sin_addr) <= 0)
     {
         perror("inet_pton");
         return -1;
     }
 
     //Connect to server
-    if (connect(sproxySocket, (struct sockaddr*)sproxyAddr, sizeof(sproxyAddr)) < 0) 
+    if (connect(sproxySocket, (struct sockaddr*)&sproxyAddr, sizeof(sproxyAddr)) < 0) 
     { 
         perror("Connection failed: connect");
         return -1;
@@ -90,8 +91,7 @@ int main(int argc, char *argv[])
     int sproxySocket = 0, telnetAccept = 0;
     int* telnetSocket = 0;
     int maxLen = 1025;
-    struct sockaddr_in* telnetAddr = malloc(sizeof(struct sockaddr_in));;
-    struct sockaddr_in* sproxyAddr = malloc(sizeof(struct sockaddr_in));;
+    struct sockaddr_in telnetAddr;
     fd_set readfds;
     char telnetBuff[1025] = {0};
     char sproxyBuff[1025] = {0};
@@ -105,14 +105,14 @@ int main(int argc, char *argv[])
 
     while(1)
     {
-        sproxySocket = connectToServer(sproxyAddr, argv[2], argv[3]);
+        sproxySocket = connectToServer(argv[2], argv[3]);
 
         if(sproxySocket == -1)
         {
             return 1;
         }
 
-        telnetAccept = acceptTelnetConnection(telnetSocket, telnetAddr, argv[1]);
+        telnetAccept = acceptTelnetConnection(telnetSocket, &telnetAddr, argv[1]);
 
         if(telnetAccept == -1)
         {
@@ -154,9 +154,6 @@ int main(int argc, char *argv[])
                 if (FD_ISSET(telnetAccept, &readfds)) {
                     int valRead = recv(telnetAccept, telnetBuff, maxLen, 0);
                     if (valRead <= 0) {
-                        getpeername(telnetAccept, (struct sockaddr *) &telnetAddr, (socklen_t * )sizeof(telnetAddr));
-                        printf("Host disconnected , ip %s , port %d \n",
-                            inet_ntoa(telnetAddr->sin_addr), ntohs(telnetAddr->sin_port));
                         close(*telnetSocket);
                         close(sproxySocket);
                         break;
@@ -174,10 +171,6 @@ int main(int argc, char *argv[])
                 if (FD_ISSET(sproxySocket, &readfds)) {
                     int valRead = recv(sproxySocket, sproxyBuff, maxLen, 0);
                     if (valRead <= 0) {
-                        int serverAddrLen = sizeof(sproxyAddr);
-                        getpeername(sproxySocket, (struct sockaddr *) &sproxyAddr, (socklen_t * ) & serverAddrLen);
-                        printf("Host disconnected , ip %s , port %d \n",
-                            inet_ntoa(sproxyAddr->sin_addr), ntohs(sproxyAddr->sin_port));
                         close(*telnetSocket);
                         close(sproxySocket);
                         break;
