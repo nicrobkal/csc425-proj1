@@ -27,7 +27,7 @@ int connectToServer(char* targetIP, char* targetPort)
     sproxyAddr.sin_port = htons(atoi(targetPort));
 
     //Bind IP to socket
-    if(inet_pton(AF_INET, targetIP, &sproxyAddr.sin_addr) <= 0)
+    if(inet_pton(AF_INET, targetIP, &sproxyAddr.sin_addr) < 0)
     {
         perror("inet_pton");
         return -1;

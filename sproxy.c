@@ -23,7 +23,7 @@ int connectToDaemon()
     daemonAddr.sin_port = htons(23);
 
     //Bind IP to socket
-    if(inet_pton(AF_INET, "127.0.0.1", &daemonAddr.sin_addr) <= 0)  
+    if(inet_pton(AF_INET, "127.0.0.1", &daemonAddr.sin_addr) < 0)  
     {
         perror("inet_pton");
         return -1;
