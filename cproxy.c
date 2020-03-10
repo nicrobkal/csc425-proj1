@@ -63,7 +63,7 @@ int acceptTelnetConnection(int* telnetSocket, struct sockaddr_in* telnetAddr, ch
     telnetAddr->sin_port = htons(atoi(targetPort));
     
     //Bind ip to socket
-    if(bind(*telnetSocket, (struct sockaddr *)telnetAddr, sizeof(*telnetAddr)) < 0) 
+    if(bind(*telnetSocket, (struct sockaddr *)telnetAddr, sizeof(telnetAddr)) < 0) 
     {
         perror("bind");
         return -1;
