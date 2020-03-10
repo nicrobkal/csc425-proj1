@@ -76,8 +76,10 @@ int acceptTelnetConnection(int* telnetSocket, struct sockaddr_in* telnetAddr, ch
         exit(EXIT_FAILURE);
     }
 
+    socklen_t telnetAddrLen = sizeof(telnetAddr);
+
     //Accept the client
-    if ((telnetAccept = accept(*telnetSocket, (struct sockaddr *)telnetAddr, (socklen_t*)sizeof(telnetAddr))) < 0) 
+    if ((telnetAccept = accept(*telnetSocket, (struct sockaddr *)telnetAddr, &telnetAddrLen)) < 0) 
     {
         perror("accept");
         return -1;

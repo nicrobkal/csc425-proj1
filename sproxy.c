@@ -72,12 +72,14 @@ int acceptClientConnection(int* cproxySocket, struct sockaddr_in* cproxyAddr, ch
     if (listen(*cproxySocket, 1) < 0) 
     { 
         perror("listen"); 
-        exit(EXIT_FAILURE); 
+        exit(EXIT_FAILURE);
     }
 
+    socklen_t cproxyAddrLen = sizeof(cproxyAddr);
+
     //Accept the client
-    if ((cAccept = accept(*cproxySocket, (struct sockaddr *)cproxyAddr, (socklen_t*)sizeof(cproxyAddr))) < 0) 
-    { 
+    if ((cAccept = accept(*cproxySocket, (struct sockaddr *)cproxyAddr, &cproxyAddrLen)) < 0) 
+    {
         perror("accept");
         return -1;
     }
