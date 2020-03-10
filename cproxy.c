@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 { 
     int sproxySocket = 0, telnetAccept = 0;
     int* telnetSocket = malloc(sizeof(int));
-    telnetSocket = 0;
+    *telnetSocket = 0;
     int maxLen = 1025;
     struct sockaddr_in telnetAddr;
     fd_set readfds;
