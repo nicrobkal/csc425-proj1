@@ -62,7 +62,7 @@ int acceptClientConnection(int* cproxySocket, struct sockaddr_in* cproxyAddr, ch
     cproxyAddr->sin_port = htons(atoi(targetPort));
     
     //Bind ip to socket
-    if(bind(*cproxySocket, (struct sockaddr *)cproxyAddr, sizeof(cproxyAddr)) < 0)
+    if(bind(*cproxySocket, (struct sockaddr *)cproxyAddr, sizeof(*cproxyAddr)) < 0)
     {
         perror("bind");
         return -1;
