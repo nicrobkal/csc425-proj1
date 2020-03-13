@@ -210,13 +210,13 @@ int main(int argc, char *argv[])
                 close(sproxySocket);
                 return 1;
             } 
-            else if (rv == 0) 
+            /*else if (rv == 0) 
             {
                 printf("Timeout occurred! No data after 10.5 seconds.");
                 close(*telnetSocket);
                 close(sproxySocket);
                 return 1;
-            } 
+            }*/
             else 
             {
                 //One or both descrptors have data
