@@ -1,12 +1,22 @@
-main : sproxy cproxy
-	cp * ../10
+# Makefile for HW1 of CSC422
+# Declaration of variables
+CC = gcc
+CC_FLAGS = -Wall -g
+DEPS = message.h portablesocket.h
 
-sproxy : sproxy.c
-	gcc -g -Wall -o sproxy sproxy.c
+.PHONY: all clean
 
-cproxy : cproxy.c
-	gcc -g -Wall -o cproxy cproxy.c
+all: sproxy cproxy
 
-.PHONY: clean
-clean :
-	rm -f *.o client server
+%.o: %.c $(DEPS)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+cproxy: cproxy.o portablesocket.o message.o
+	$(CC) $(CFLAGS) -o $@ $^
+
+sproxy: sproxy.o portablesocket.o message.o
+	$(CC) $(CFLAGS) -o $@ $^
+
+#clean the object files and executables
+clean:
+	rm *.o sproxy cproxy
