@@ -97,6 +97,7 @@ int main(int argc, char *argv[])
     fd_set readfds;
     char cproxyBuff[1025];
     char daemonBuff[1025];
+    struct timeval tv;
 
     //Check if arguments are valid
     if(argc != 2)
@@ -142,9 +143,10 @@ int main(int argc, char *argv[])
                 n = daemonSocket + 1;
             }
 
-            //Select returns one of the sockets or timeout
-            int rv = select(n, &readfds, NULL, NULL, NULL);
+            tv.tv_sec = 1;
 
+            //Select returns one of the sockets or timeout
+            int rv = select(n, &readfds, NULL, NULL, &tv);
 
             if (rv == -1)
             {

@@ -88,6 +88,48 @@ int acceptTelnetConnection(int* telnetSocket, struct sockaddr_in* telnetAddr, ch
     return telnetAccept;
 }
 
+unsigned char * serializeInt(unsigned char *buffer, int value)
+{
+    buffer[0] = value >> 24;
+    buffer[1] = value >> 16;
+    buffer[2] = value >> 8;
+    buffer[3] = value;
+    return buffer + 4;
+}
+
+unsigned char * serializeChar(unsigned char *buffer, char value)
+{
+    buffer[0] = value;
+    return buffer + 1;
+}
+
+unsigned char * serializeString(unsigned char *buffer, char *value)
+{
+    int i;
+    for(i = 0; i < strlen(value); i++)
+    {
+        serializeChar(buffer, value[i]);
+    }
+
+    return buffer;
+}
+
+unsigned char * serializeMessage(unsigned char *buffer, int header, char * payload)
+{
+    buffer = serializeInt(buffer, header);
+    buffer = serializeString(buffer, payload);
+    return buffer;
+}
+
+unsigned char * deserializeMessage(unsigned char *buffer, int *header)
+{
+    header[0] += buffer[0] << 24;
+    header += buffer[1] << 16;
+    header += buffer[2] << 8;
+    header += buffer[3];
+    return buffer + 4;
+}
+
 int main(int argc, char *argv[]) 
 { 
     int sproxySocket = 0, telnetAccept = 0;
@@ -95,9 +137,11 @@ int main(int argc, char *argv[])
     *telnetSocket = 0;
     int maxLen = 1025;
     struct sockaddr_in telnetAddr;
-    fd_set readfds;
+    fd_set datareadfds, heartbeatreadfds;
     char telnetBuff[1025] = {0};
     char sproxyBuff[1025] = {0};
+    int telnetConnected = 1;
+    struct timeval tv;
 
     //Check if arguments are valid
     if(argc != 4)
@@ -108,6 +152,12 @@ int main(int argc, char *argv[])
 
     while(1)
     {
+        FD_ZERO(&heartbeatreadfds);
+        
+        //Add descriptors
+        FD_SET(telnetAccept, &heartbeatreadfds);
+        FD_SET(sproxySocket, &heartbeatreadfds);
+
         sproxySocket = connectToServer(argv[2], argv[3]);
 
         if(sproxySocket == -1)
@@ -115,48 +165,66 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        telnetAccept = acceptTelnetConnection(telnetSocket, &telnetAddr, argv[1]);
-
-        if(telnetAccept == -1)
+        if(telnetConnected != 0)
         {
-            return 1;
+            telnetAccept = acceptTelnetConnection(telnetSocket, &telnetAddr, argv[1]);
+
+            if(telnetAccept == -1)
+            {
+                return 1;
+            }
+
+            telnetConnected = 1;
         }
 
         //While user is still inputting data
-        while(1) {
+        while(1)
+        {
             //Clear the set
             int n = 0;
-            FD_ZERO(&readfds);
+            FD_ZERO(&datareadfds);
 
             //Add descriptors
-            FD_SET(telnetAccept, &readfds);
-            FD_SET(sproxySocket, &readfds);
+            FD_SET(telnetAccept, &datareadfds);
+            FD_SET(sproxySocket, &datareadfds);
 
             //Find larger file descriptor
-            if (telnetAccept > sproxySocket) {
+            if (telnetAccept > sproxySocket)
+            {
                 n = telnetAccept + 1;
-            } else {
+            }
+            else
+            {
                 n = sproxySocket + 1;
             }
 
-            //Select returns one of the sockets or timeout
-            int rv = select(n, &readfds, NULL, NULL, NULL);
+            tv.tv_sec = 1;
 
-            if (rv == -1) {
+            //Select returns one of the sockets or timeout
+            int rv = select(n, &datareadfds, NULL, NULL, &tv);
+
+            if (rv == -1) 
+            {
                 perror("select");
                 close(*telnetSocket);
                 close(sproxySocket);
                 return 1;
-            } else if (rv == 0) {
+            } 
+            else if (rv == 0) 
+            {
                 printf("Timeout occurred! No data after 10.5 seconds.");
                 close(*telnetSocket);
                 close(sproxySocket);
                 return 1;
-            } else {
+            } 
+            else 
+            {
                 //One or both descrptors have data
-                if (FD_ISSET(telnetAccept, &readfds)) {
+                if (FD_ISSET(telnetAccept, &datareadfds)) 
+                {
                     int valRead = recv(telnetAccept, telnetBuff, maxLen, 0);
-                    if (valRead <= 0) {
+                    if (valRead <= 0) 
+                    {
                         close(*telnetSocket);
                         close(sproxySocket);
                         break;
@@ -165,15 +233,18 @@ int main(int argc, char *argv[])
                     
                     send(sproxySocket, telnetBuff, valRead, 0);
 
-                    if(strcmp(telnetBuff, "exit") == 0 || strcmp(telnetBuff, "logout") == 0){
+                    if(strcmp(telnetBuff, "exit") == 0 || strcmp(telnetBuff, "logout") == 0)
+                    {
                         close(*telnetSocket);
                         close(sproxySocket);
                         break;
                     }
                 }
-                if (FD_ISSET(sproxySocket, &readfds)) {
+                if (FD_ISSET(sproxySocket, &datareadfds))
+                {
                     int valRead = recv(sproxySocket, sproxyBuff, maxLen, 0);
-                    if (valRead <= 0) {
+                    if (valRead <= 0)
+                    {
                         close(*telnetSocket);
                         close(sproxySocket);
                         break;
@@ -185,7 +256,8 @@ int main(int argc, char *argv[])
 
             //Sanitize buffers
             int i;
-            for (i = 0; i < 1025; i++) {
+            for (i = 0; i < 1025; i++)
+            {
                 telnetBuff[i] = '\0';
                 sproxyBuff[i] = '\0';
             }
