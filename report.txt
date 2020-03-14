@@ -1,0 +1,16 @@
+Jonathon Davis
+Scott Sorce
+
+CSC425 Milestone-3 report
+
+Each message has a header and a package, the header contains a type, and a length
+The payload contains a char * to the number of bytes specified by the length
+in the header. There are multiple types each message can be, HEARTBEAT specifies
+that the message is simply a heart beat, this usually contains a length of 0
+and does not include a payload, MESSAGE is the type that is used when the payload
+needs to be delivered to the program. NEW_CONNECTION is used when the Client
+is establishing a new connection to the Server. RECONNECT is used when the Client
+is disconnected from the server and is Attempting to reconnect to the Server.
+The serialized message looks like "%d%d%s" where the first digit is the type,
+the second digit is the length of the payload, and the string of bytes was the
+payload.

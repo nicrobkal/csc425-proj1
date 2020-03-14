@@ -1,12 +1,21 @@
 /*
- * portablesocket.h
+ * PortableSocket.h
+ * A socket interface compatiable on Windows and Ubuntu
+ *
+ *  Created on: Jan 23, 2017
+ *      Author: Jonathon Davis
  */
 
 #ifndef PORTABLE_SOCKET
 #define PORTABLE_SOCKET
+//loads the two seperate socket libraries
+#ifdef __WIN32__
+# include <winsock2.h>
+#else
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#endif
 //loads common libraries that will be needed
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +28,18 @@ struct PortableSocket {
 	struct sockaddr_in address;
 	int error;
 };
+
+#define TCP 100
+#define UDP 200
+
+/*
+ * openNetwork is the first function that must be called
+ * whenever sockets are going to be used. This function initializes
+ * certain parameters that are system dependent. This function only ever
+ * needs to be called once, and will allow the creation and use of sockets
+ * throughout the remainder of the programs runtime.
+ */
+int cpOpenNetwork();
 
 /*
  * newPortableSocket creates a new portable socket and returns the socket
@@ -91,5 +112,4 @@ int cpCloseNetwork();
  * the Portable Sockets error field.
  */
 int cpCheckError(struct PortableSocket * socket);
-
 #endif

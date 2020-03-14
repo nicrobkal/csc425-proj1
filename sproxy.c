@@ -162,6 +162,11 @@ int main(int argc, char *argv[])
   parseInput(argc, argv);
 
   /*
+  * Open the network
+  */
+  cpOpenNetwork();
+
+  /*
   * Connection to the client proxy
   */
   clientAcceptor = getClientAcceptor(serverPort);

@@ -132,6 +132,11 @@ int main(int argc, char *argv[]) {
   parseInput(argc, argv);
 
   /*
+    * Open the network
+    */
+  cpOpenNetwork();
+
+  /*
   * Connection to the local telnet
   */
   telnetAcceptorSocket = getTelnetAcceptor();
@@ -202,8 +207,8 @@ int main(int argc, char *argv[]) {
   }
 
   /*
-   * Close the connections
-   */
+    * Close the connections
+    */
   cpClose(telnetAcceptorSocket);
   cpClose(telnetSocket);
   cpClose(sproxySocket);
