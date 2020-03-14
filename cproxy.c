@@ -202,8 +202,8 @@ int main(int argc, char *argv[]) {
   }
 
   /*
-    * Close the connections
-    */
+   * Close the connections
+   */
   cpClose(telnetAcceptorSocket);
   cpClose(telnetSocket);
   cpClose(sproxySocket);
