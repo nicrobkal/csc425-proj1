@@ -36,19 +36,11 @@ struct PortableSocket * newTCPSocket(char * address, int port){
 	memset(&sock_address, 0, sizeof(sock_address));
 	sock_address.sin_family = AF_INET;
 	sock_address.sin_port = htons(port);
-	#ifdef __WIN32__
-		if(strcmp(address,"localhost") == 0){
-			sock_address.sin_addr.S_un.S_addr = inet_addr(inet_ntoa(*(struct in_addr *)*gethostbyname("")->h_addr_list));
-		} else {
-			sock_address.sin_addr.S_un.S_addr = inet_addr(address);
-		}
-	#else
-		if(strcmp(address,"localhost") == 0){
-			sock_address.sin_addr.s_addr = INADDR_ANY;
-		} else {
-			sock_address.sin_addr.s_addr = inet_addr(address);
-		}
-	#endif
+    if(strcmp(address,"localhost") == 0){
+        sock_address.sin_addr.s_addr = INADDR_ANY;
+    } else {
+        sock_address.sin_addr.s_addr = inet_addr(address);
+    }
 
 	//create the return type
 	struct PortableSocket* newPS = malloc(sizeof(struct PortableSocket));
@@ -146,11 +138,7 @@ int cpRecv(struct PortableSocket * socket, char* message, int bufferSize){
  * by the socket. returns 0 if successful, error code otherwise.
  */
 int cpClose(struct PortableSocket* socket){
-	#ifdef __WIN32__
-		socket->error = closesocket(socket->socket);
-	#else
-		socket->error = close(socket->socket);
-	#endif
+	socket->error = close(socket->socket);
 	int error = cpCheckError(socket);
 	free(socket);
 	return error;
@@ -162,9 +150,6 @@ int cpClose(struct PortableSocket* socket){
  * up any additional resources that may be used by the platform specific implementation.
  */
 int cpCloseNetwork(){
-	#ifdef __WIN32__
-	WSACleanup();
-	#endif
 	return 0;
 }
 
@@ -173,12 +158,11 @@ int cpCloseNetwork(){
  * the Portable Sockets error field.
  */
 int cpCheckError(struct PortableSocket * socket){
-	if(socket->error < 0){
-	#ifdef __WIN32__
-		socket->error = WSAGetLastError();
-	#endif
-	return socket->error;
-	} else {
+	if(socket->error < 0)
+    {
+	    return socket->error;
+	} else 
+    {
 		return 0;
 	}
 }
