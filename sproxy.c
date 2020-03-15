@@ -10,6 +10,7 @@ int selectValue = 0;
 int serverPort = 0;
 int clientConnected = 0;
 int n = 0;
+int size = 1024;
 
 struct PortableSocket *clientAcceptor;
 struct PortableSocket *clientProxy;
@@ -86,7 +87,7 @@ void reset(fd_set *readfds, int telnetSocket, int clientSocket, int clientAccept
 int forward(struct PortableSocket *sender, struct PortableSocket *reciever, char *message, char *senderName)
 {
   // print "recieved from telnet 'message' sending to sproxy"
-  int messageSize = cpRecv(sender, message, 1024);
+  int messageSize = cpRecv(sender, message, size);
   if (cpCheckError(sender) != 0)
     return -1;
   if (clientConnected == 1)
@@ -103,7 +104,7 @@ int forward(struct PortableSocket *sender, struct PortableSocket *reciever, char
 int sendMessage(struct PortableSocket *reciever, char *message, int messageSize)
 {
   cpSend(reciever, message, messageSize);
-  memset(message, 0, 1024);
+  memset(message, 0, size);
   return 0;
 }
 
@@ -119,7 +120,7 @@ void sendHeartbeat(struct PortableSocket *reciever)
 int recvMessage(struct PortableSocket *sender, struct PortableSocket *reciever)
 {
   struct message messageStruct;
-  char message[1024];
+  char message[size];
   messageStruct.payload = message;
   recvMessageStruct(&messageStruct, sender);
   if (messageStruct.type == MESSAGE)
@@ -171,7 +172,7 @@ int main(int argc, char *argv[])
   * Connection to the local telnet
   */
   struct message firstConnect;
-  char empty[1024];
+  char empty[size];
   firstConnect.payload = empty;
   recvMessageStruct(&firstConnect, clientProxy);
   telnetSocket = getTelnet();
@@ -182,8 +183,8 @@ int main(int argc, char *argv[])
   fd_set readfds;
   int socketN[] = {clientProxy->socket, telnetSocket->socket, clientAcceptor->socket};
   n = getN(socketN, 3);
-  char message[1024];
-  memset(message, 0, 1024);
+  char message[size];
+  memset(message, 0, size);
   struct timeval tv = {3, 0};
   /*
   * run the program
@@ -215,7 +216,7 @@ int main(int argc, char *argv[])
       int socketN[] = {telnetSocket->socket, clientProxy->socket, clientAcceptor->socket};
       n = getN(socketN, 3);
       struct message messageStruct;
-      char message[1024];
+      char message[size];
       messageStruct.payload = message;
       recvMessageStruct(&messageStruct, clientProxy);
       if (messageStruct.type == NEW_CONNECTION)

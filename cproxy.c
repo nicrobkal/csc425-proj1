@@ -15,6 +15,7 @@ struct PortableSocket *telnetAcceptorSocket;
 struct PortableSocket *telnetSocket;
 struct PortableSocket *sproxySocket;
 int n;
+int size = 1024;
 
 //gets the value of n for select
 int getN(int socket[], int numberOfSockets)
@@ -93,7 +94,7 @@ void reset(fd_set *readfds, int telnetSocket, int serverSocket)
 int forward(struct PortableSocket *sender, struct PortableSocket *reciever, char *message, char *senderName)
 {
     // print "recieved from telnet 'message' sending to sproxy"
-    int messageSize = cpRecv(sender, message, 1024);
+    int messageSize = cpRecv(sender, message, size);
     if (cpCheckError(sender) != 0)
         return -1;
     struct message messageStruct;
@@ -113,7 +114,7 @@ int sendMessage(struct PortableSocket *reciever, char *message, int messageSize)
 int recvMessage(struct PortableSocket *sender, struct PortableSocket *reciever)
 {
     struct message messageStruct;
-    char message[1024];
+    char message[size];
     messageStruct.payload = message;
     recvMessageStruct(&messageStruct, sender);
     if (messageStruct.type == MESSAGE)
@@ -172,8 +173,8 @@ int main(int argc, char *argv[])
     fd_set readfds;
     int socketN[] = {sproxySocket->socket, telnetSocket->socket, telnetAcceptorSocket->socket};
     n = getN(socketN, 3);
-    char message[1024];
-    memset(message, 0, 1024);
+    char message[size];
+    memset(message, 0, size);
     struct timeval tv = {1, 0};
     /*
   * run the program
