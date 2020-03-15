@@ -16,11 +16,11 @@ struct PortableSocket *clientAccept;
 struct PortableSocket *clientSocket;
 struct PortableSocket *telnetSocket;
 
-int getNForSelect(int socket[], int numberOfSockets)
+int getNForSelect(int socket[], int numSockets)
 {
     int max = -1;
     int i = 0;
-    for (i = 0; i < numberOfSockets; i++)
+    for (i = 0; i < numSockets; i++)
     {
         if (socket[i] > max)
         {
@@ -30,7 +30,7 @@ int getNForSelect(int socket[], int numberOfSockets)
     return max + 1;
 }
 
-struct PortableSocket *getClientAcceptor(int serverPort)
+/*struct PortableSocket *getClientAccept(int serverPort)
 {
     struct PortableSocket *clientAccept = cpSocket(100, "localhost", serverPort);
     if (cpCheckError(clientAccept) != 0)
@@ -41,7 +41,7 @@ struct PortableSocket *getClientAcceptor(int serverPort)
     cpBind(clientAccept);
     cpListen(clientAccept, 5);
     return clientAccept;
-}
+}*/
 
 struct PortableSocket *getClient(struct PortableSocket *clientAccept)
 {
@@ -159,8 +159,17 @@ int main(int argc, char *argv[])
     }
         
     parseInput(argc, argv);
-
-    clientAccept = getClientAcceptor(serverPort);
+    /**/
+    clientAccept = cpSocket(100, "localhost", serverPort);
+    if (cpCheckError(clientAccept) != 0)
+    {
+        fprintf(stderr, "Failed to create client acceptor socket \n");
+        exit(1);
+    }
+    cpBind(clientAccept);
+    cpListen(clientAccept, 5);
+    /**/
+    //clientAccept = getClientAccept(serverPort);
     clientSocket = getClient(clientAccept);
 
     struct message firstConnect;

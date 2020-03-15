@@ -17,11 +17,11 @@ struct PortableSocket *sproxySocket;
 int n;
 int size = 1024;
 
-int getNForSelect(int socket[], int numberOfSockets)
+int getNForSelect(int socket[], int numSockets)
 {
     int max = -1;
     int i = 0;
-    for (i = 0; i < numberOfSockets; i++)
+    for (i = 0; i < numSockets; i++)
     {
         if (socket[i] > max)
         {
