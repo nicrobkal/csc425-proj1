@@ -12,11 +12,11 @@ int isClientConnected = 0;
 int n = 0;
 int size = 1024;
 
-struct PortableSocket *clientAcceptor;
-struct PortableSocket *clientProxy;
+struct PortableSocket *clientAccept;
+struct PortableSocket *clientSocket;
 struct PortableSocket *telnetSocket;
 
-int getN(int socket[], int numberOfSockets)
+int getNForSelect(int socket[], int numberOfSockets)
 {
     int max = -1;
     int i = 0;
@@ -32,20 +32,20 @@ int getN(int socket[], int numberOfSockets)
 
 struct PortableSocket *getClientAcceptor(int serverPort)
 {
-    struct PortableSocket *clientAcceptor = cpSocket(100, "localhost", serverPort);
-    if (cpCheckError(clientAcceptor) != 0)
+    struct PortableSocket *clientAccept = cpSocket(100, "localhost", serverPort);
+    if (cpCheckError(clientAccept) != 0)
     {
         fprintf(stderr, "Failed to create client acceptor socket \n");
         exit(1);
     }
-    cpBind(clientAcceptor);
-    cpListen(clientAcceptor, 5);
-    return clientAcceptor;
+    cpBind(clientAccept);
+    cpListen(clientAccept, 5);
+    return clientAccept;
 }
 
-struct PortableSocket *getClient(struct PortableSocket *clientAcceptor)
+struct PortableSocket *getClient(struct PortableSocket *clientAccept)
 {
-    struct PortableSocket *client = cpAccept(clientAcceptor);
+    struct PortableSocket *client = cpAccept(clientAccept);
     if (cpCheckError(client) != 0)
     {
         fprintf(stderr, "Failed to create client socket \n");
@@ -137,8 +137,8 @@ int recvMessage(struct PortableSocket *sender, struct PortableSocket *reciever)
         printf("Creating new telnet session\n");
         cpClose(telnetSocket);
         telnetSocket = getTelnet();
-        int socketN[] = {telnetSocket->socket, clientProxy->socket, clientAcceptor->socket};
-        n = getN(socketN, 3);
+        int socketN[] = {telnetSocket->socket, clientSocket->socket, clientAccept->socket};
+        n = getNForSelect(socketN, 3);
         return 1;
     }
     return messageStruct.length;
@@ -160,61 +160,61 @@ int main(int argc, char *argv[])
         
     parseInput(argc, argv);
 
-    clientAcceptor = getClientAcceptor(serverPort);
-    clientProxy = getClient(clientAcceptor);
+    clientAccept = getClientAcceptor(serverPort);
+    clientSocket = getClient(clientAccept);
 
     struct message firstConnect;
     char empty[size];
     firstConnect.payload = empty;
-    recvMessageStruct(&firstConnect, clientProxy);
+    recvMessageStruct(&firstConnect, clientSocket);
     telnetSocket = getTelnet();
 
     fd_set readfds;
-    int socketN[] = {clientProxy->socket, telnetSocket->socket, clientAcceptor->socket};
-    n = getN(socketN, 3);
+    int socketN[] = {clientSocket->socket, telnetSocket->socket, clientAccept->socket};
+    n = getNForSelect(socketN, 3);
     char message[size];
     memset(message, 0, size);
     struct timeval tv = {3, 0};
 
-    while (cpCheckError(clientProxy) == 0 && cpCheckError(telnetSocket) == 0)
+    while (cpCheckError(clientSocket) == 0 && cpCheckError(telnetSocket) == 0)
     {
-        reset(&readfds, telnetSocket->socket, clientProxy->socket, clientAcceptor->socket);
+        reset(&readfds, telnetSocket->socket, clientSocket->socket, clientAccept->socket);
         struct timeval tv2 = {3, 0};
         struct timeval tv3 = {30, 0};
         selectVal = select(n, &readfds, NULL, NULL, &tv);
         if (FD_ISSET(telnetSocket->socket, &readfds))
         {
-            int result = forward(telnetSocket, clientProxy, message, "telnet");
+            int result = forward(telnetSocket, clientSocket, message, "telnet");
             if (result <= 0)
             {
                 break;
             }
         }
-        if (isClientConnected == 1 && FD_ISSET(clientProxy->socket, &readfds))
+        if (isClientConnected == 1 && FD_ISSET(clientSocket->socket, &readfds))
         {
-            int result = recvMessage(clientProxy, telnetSocket);
+            int result = recvMessage(clientSocket, telnetSocket);
             if (result <= 0)
             {
                 break;
             }
             tv = tv2;
         }
-        if (FD_ISSET(clientAcceptor->socket, &readfds))
+        if (FD_ISSET(clientAccept->socket, &readfds))
         {
-            clientProxy = getClient(clientAcceptor);
+            clientSocket = getClient(clientAccept);
             isClientConnected = 1;
-            int socketN[] = {telnetSocket->socket, clientProxy->socket, clientAcceptor->socket};
-            n = getN(socketN, 3);
+            int socketN[] = {telnetSocket->socket, clientSocket->socket, clientAccept->socket};
+            n = getNForSelect(socketN, 3);
             struct message messageStruct;
             char message[size];
             messageStruct.payload = message;
-            recvMessageStruct(&messageStruct, clientProxy);
+            recvMessageStruct(&messageStruct, clientSocket);
             if (messageStruct.type == NEW_CONNECTION)
             {
                 cpClose(telnetSocket);
                 telnetSocket = getTelnet();
-                int socketN[] = {telnetSocket->socket, clientProxy->socket};
-                n = getN(socketN, 2);
+                int socketN[] = {telnetSocket->socket, clientSocket->socket};
+                n = getNForSelect(socketN, 2);
             }
         }
         if (selectVal == 0 && isClientConnected == 0)
@@ -223,16 +223,16 @@ int main(int argc, char *argv[])
         }
         if (selectVal == 0 && isClientConnected == 1)
         {
-            cpClose(clientProxy);
+            cpClose(clientSocket);
             isClientConnected = 0;
-            int socketN[] = {telnetSocket->socket, clientAcceptor->socket};
-            n = getN(socketN, 2);
+            int socketN[] = {telnetSocket->socket, clientAccept->socket};
+            n = getNForSelect(socketN, 2);
             tv = tv3;
         }
     }
 
-    cpClose(clientAcceptor);
-    cpClose(clientProxy);
+    cpClose(clientAccept);
+    cpClose(clientSocket);
     cpClose(telnetSocket);
     cpCloseNetwork();
     return 0;
