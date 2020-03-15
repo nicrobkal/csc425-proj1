@@ -6,7 +6,6 @@ void initMessageStruct(struct message * this, int type, int length, char * paylo
   this->payload = payload;
 }
 
-//Serializes the message in order to send over the network
 void sendMessageStruct(struct message * this, struct PortableSocket * reciever){
   char header[10];
   memset(header, 0 , 10);
@@ -15,7 +14,6 @@ void sendMessageStruct(struct message * this, struct PortableSocket * reciever){
   cpSend(reciever, this->payload, this->length);
 }
 
-//Deserializes the message back into a struct
 int recvMessageStruct(struct message * this, struct PortableSocket * sender){
   char header[10];
   memset(header, 0, 10);

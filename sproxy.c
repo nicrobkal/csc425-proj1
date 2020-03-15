@@ -6,9 +6,9 @@
 #include <sys/select.h>
 #include "message.h"
 
-int selectValue = 0;
+int selectVal = 0;
 int serverPort = 0;
-int clientConnected = 0;
+int isClientConnected = 0;
 int n = 0;
 int size = 1024;
 
@@ -52,7 +52,7 @@ struct PortableSocket *getClient(struct PortableSocket *clientAcceptor)
     fprintf(stderr, "Failed to create client socket \n");
     exit(1);
   }
-  clientConnected = 1;
+  isClientConnected = 1;
   return client;
 }
 
@@ -73,11 +73,11 @@ struct PortableSocket *getTelnet()
 void reset(fd_set *readfds, int telnetSocket, int clientSocket, int clientAcceptor)
 {
   FD_CLR(telnetSocket, readfds);
-  if (clientConnected == 1)
+  if (isClientConnected == 1)
     FD_CLR(clientSocket, readfds);
   FD_CLR(clientAcceptor, readfds);
   FD_ZERO(readfds);
-  if (clientConnected == 1)
+  if (isClientConnected == 1)
     FD_SET(clientSocket, readfds);
   FD_SET(clientAcceptor, readfds);
   FD_SET(telnetSocket, readfds);
@@ -90,7 +90,7 @@ int forward(struct PortableSocket *sender, struct PortableSocket *reciever, char
   int messageSize = cpRecv(sender, message, size);
   if (cpCheckError(sender) != 0)
     return -1;
-  if (clientConnected == 1)
+  if (isClientConnected == 1)
   {
     struct message messageStruct;
     initMessageStruct(&messageStruct, MESSAGE, messageSize, message);
@@ -148,7 +148,7 @@ int recvMessage(struct PortableSocket *sender, struct PortableSocket *reciever)
 void parseInput(int argc, char *argv[])
 {
   int current = 1;
-  selectValue = 0;
+  selectVal = 0;
   serverPort = atoi(argv[current++]);
 }
 
@@ -194,7 +194,7 @@ int main(int argc, char *argv[])
     reset(&readfds, telnetSocket->socket, clientProxy->socket, clientAcceptor->socket);
     struct timeval tv2 = {3, 0};
     struct timeval tv3 = {30, 0};
-    selectValue = select(n, &readfds, NULL, NULL, &tv);
+    selectVal = select(n, &readfds, NULL, NULL, &tv);
     // foward the message
     if (FD_ISSET(telnetSocket->socket, &readfds))
     {
@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
       if (result <= 0)
         break;
     }
-    if (clientConnected == 1 && FD_ISSET(clientProxy->socket, &readfds))
+    if (isClientConnected == 1 && FD_ISSET(clientProxy->socket, &readfds))
     {
       int result = recvMessage(clientProxy, telnetSocket);
       if (result <= 0)
@@ -212,7 +212,7 @@ int main(int argc, char *argv[])
     if (FD_ISSET(clientAcceptor->socket, &readfds))
     {
       clientProxy = getClient(clientAcceptor);
-      clientConnected = 1;
+      isClientConnected = 1;
       int socketN[] = {telnetSocket->socket, clientProxy->socket, clientAcceptor->socket};
       n = getN(socketN, 3);
       struct message messageStruct;
@@ -227,15 +227,15 @@ int main(int argc, char *argv[])
         n = getN(socketN, 2);
       }
     }
-    if (selectValue == 0 && clientConnected == 0)
+    if (selectVal == 0 && isClientConnected == 0)
     {
       printf("Timedout\n");
       break;
     }
-    if (selectValue == 0 && clientConnected == 1)
+    if (selectVal == 0 && isClientConnected == 1)
     {
       cpClose(clientProxy);
-      clientConnected = 0;
+      isClientConnected = 0;
       int socketN[] = {telnetSocket->socket, clientAcceptor->socket};
       n = getN(socketN, 2);
       tv = tv3;

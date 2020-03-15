@@ -1,20 +1,18 @@
-CC = gcc
-CC_FLAGS = -Wall -g
-DEPS = message.h portablesocket.h
+.PHONY: all clean copy
 
-.PHONY: all clean
+all: sproxy cproxy copy
 
-all: sproxy cproxy
+copy:
+	cp * ../10
 
-%.o: %.c $(DEPS)
-	$(CC) $(CFLAGS) -c -o $@ $<
+%.o: %.c message.h portablesocket.h
+	gcc -Wall -g -c -o $@ $<
 
 cproxy: cproxy.o portablesocket.o message.o
-	$(CC) $(CFLAGS) -o $@ $^
+	gcc -Wall -g -o $@ $^
 
 sproxy: sproxy.o portablesocket.o message.o
-	$(CC) $(CFLAGS) -o $@ $^
+	gcc -Wall -g -o $@ $^
 
-#clean the object files and executables
 clean:
 	rm *.o sproxy cproxy

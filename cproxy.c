@@ -6,9 +6,9 @@
 #include <sys/select.h>
 #include "message.h"
 
-int selectValue;
+int selectVal;
 int clientPort;
-char *serverAddress;
+char *serverAddr;
 int serverPort;
 int heartbeatsSinceLastReply;
 struct PortableSocket *telnetAcceptorSocket;
@@ -34,9 +34,9 @@ int getN(int socket[], int numberOfSockets)
 void parseInput(int argc, char *argv[])
 {
     int current = 1;
-    selectValue = 0;
+    selectVal = 0;
     clientPort = atoi(argv[current++]);
-    serverAddress = argv[current++];
+    serverAddr = argv[current++];
     serverPort = atoi(argv[current++]);
 }
 
@@ -68,7 +68,7 @@ struct PortableSocket *getTelnet(struct PortableSocket *telnetAcceptorSocket)
 
 struct PortableSocket *getSproxy()
 {
-    struct PortableSocket *sproxySocket = cpSocket(100, serverAddress, serverPort);
+    struct PortableSocket *sproxySocket = cpSocket(100, serverAddr, serverPort);
     cpConnect(sproxySocket);
     if (cpCheckError(sproxySocket) != 0)
     {
@@ -183,8 +183,8 @@ int main(int argc, char *argv[])
     {
         reset(&readfds, telnetSocket->socket, sproxySocket->socket);
         struct timeval tv2 = {1, 0};
-        selectValue = select(n, &readfds, NULL, NULL, &tv);
-        if (selectValue == 0)
+        selectVal = select(n, &readfds, NULL, NULL, &tv);
+        if (selectVal == 0)
         {
             sendHeartbeat(sproxySocket);
             tv = tv2;
