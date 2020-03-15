@@ -105,7 +105,6 @@ struct PortableSocket *cpAccept(struct PortableSocket *socket)
 int cpConnect(struct PortableSocket *socket)
 {
     socket->error = connect(socket->socket, (struct sockaddr *)&socket->address, sizeof(socket->address));
-    perror("connect");
     return cpCheckError(socket);
 }
 
