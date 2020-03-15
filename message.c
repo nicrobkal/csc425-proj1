@@ -1,6 +1,6 @@
 #include "message.h"
 
-void initMessageStruct(struct message *this, int type, int length, char *payload)
+void createMessage(struct message *this, int type, int length, char *payload)
 {
     this->type = type;
     this->length = length;
@@ -12,21 +12,21 @@ void sendMessageStruct(struct message *this, struct PortableSocket *reciever)
     char header[10];
     memset(header, 0, 10);
     sprintf(header, "%d %d", this->type, this->length);
-    cpSend(reciever, header, 10);
-    cpSend(reciever, this->payload, this->length);
+    portableSend(reciever, header, 10);
+    portableSend(reciever, this->payload, this->length);
 }
 
 void recvMessageStruct(struct message *this, struct PortableSocket *sender)
 {
     char header[10];
     memset(header, 0, 10);
-    cpRecv(sender, header, 10);
+    portableRecv(sender, header, 10);
     int type;
     int length;
     sscanf(header, "%d %d", &type, &length);
     if (length > 0)
     {
-        cpRecv(sender, this->payload, length);
+        portableRecv(sender, this->payload, length);
     }
-    initMessageStruct(this, type, length, this->payload);
+    createMessage(this, type, length, this->payload);
 }

@@ -30,23 +30,10 @@ int getNForSelect(int socket[], int numSockets)
     return max + 1;
 }
 
-/*struct PortableSocket *getClientAccept(int serverPort)
-{
-    struct PortableSocket *clientAccept = cpSocket(100, "localhost", serverPort);
-    if (cpCheckError(clientAccept) != 0)
-    {
-        fprintf(stderr, "Failed to create client acceptor socket \n");
-        exit(1);
-    }
-    cpBind(clientAccept);
-    cpListen(clientAccept, 5);
-    return clientAccept;
-}*/
-
 struct PortableSocket *getClient(struct PortableSocket *clientAccept)
 {
     struct PortableSocket *client = cpAccept(clientAccept);
-    if (cpCheckError(client) != 0)
+    if (portableCheckError(client) != 0)
     {
         fprintf(stderr, "Failed to create client socket \n");
         exit(1);
@@ -57,9 +44,9 @@ struct PortableSocket *getClient(struct PortableSocket *clientAccept)
 
 struct PortableSocket *getTelnet()
 {
-    struct PortableSocket *telnetSocket = cpSocket(100, "127.0.0.1", 23);
-    cpConnect(telnetSocket);
-    if (cpCheckError(telnetSocket) != 0)
+    struct PortableSocket *telnetSocket = createSocket("127.0.0.1", 23);
+    portableConnect(telnetSocket);
+    if (portableCheckError(telnetSocket) != 0)
     {
         fprintf(stderr, "Failed to create telnet acceptor socket \n");
         exit(1);
@@ -86,15 +73,15 @@ void reset(fd_set *readfds, int telnetSocket, int clientSocket, int clientAccept
 
 int forward(struct PortableSocket *sender, struct PortableSocket *reciever, char *message, char *senderName)
 {
-    int messageSize = cpRecv(sender, message, size);
-    if (cpCheckError(sender) != 0)
+    int messageSize = portableRecv(sender, message, size);
+    if (portableCheckError(sender) != 0)
     {
         return -1;
     }
     if (isClientConnected == 1)
     {
         struct message messageStruct;
-        initMessageStruct(&messageStruct, MESSAGE, messageSize, message);
+        createMessage(&messageStruct, MESSAGE, messageSize, message);
         sendMessageStruct(&messageStruct, reciever);
     }
     memset(message, 0, messageSize);
@@ -103,7 +90,7 @@ int forward(struct PortableSocket *sender, struct PortableSocket *reciever, char
 
 int sendMessage(struct PortableSocket *reciever, char *message, int messageSize)
 {
-    cpSend(reciever, message, messageSize);
+    portableSend(reciever, message, messageSize);
     memset(message, 0, size);
     return 0;
 }
@@ -113,7 +100,7 @@ void sendHeartbeat(struct PortableSocket *reciever)
     struct message messageStruct;
     char empty[0];
     empty[0] = '\0';
-    initMessageStruct(&messageStruct, HEARTBEAT, 0, empty);
+    createMessage(&messageStruct, HEARTBEAT, 0, empty);
     sendMessageStruct(&messageStruct, reciever);
 }
 
@@ -135,7 +122,7 @@ int recvMessage(struct PortableSocket *sender, struct PortableSocket *reciever)
     else if (messageStruct.type == NEW_CONNECTION)
     {
         printf("Creating new telnet session\n");
-        cpClose(telnetSocket);
+        portableClose(telnetSocket);
         telnetSocket = getTelnet();
         int socketN[] = {telnetSocket->socket, clientSocket->socket, clientAccept->socket};
         n = getNForSelect(socketN, 3);
@@ -157,20 +144,27 @@ int main(int argc, char *argv[])
     {
         return 1;
     }
-        
+
     parseInput(argc, argv);
-    /**/
-    clientAccept = cpSocket(100, "localhost", serverPort);
-    if (cpCheckError(clientAccept) != 0)
+    clientAccept = createSocket("localhost", serverPort);
+    if (portableCheckError(clientAccept) != 0)
     {
-        fprintf(stderr, "Failed to create client acceptor socket \n");
-        exit(1);
+        fprintf(stderr, "Failed to connect to client accepter. Terminating.\n");
+        return 1;
     }
-    cpBind(clientAccept);
-    cpListen(clientAccept, 5);
+    portableBind(clientAccept);
+    portableListen(clientAccept, 5);
+
     /**/
-    //clientAccept = getClientAccept(serverPort);
-    clientSocket = getClient(clientAccept);
+    struct PortableSocket *client = cpAccept(clientAccept);
+    if (portableCheckError(client) != 0)
+    {
+        fprintf(stderr, "Failed to connect to client. Terminating.\n");
+        return 1;
+    }
+    isClientConnected = 1;
+    /**/
+    //clientSocket = getClient(clientAccept);
 
     struct message firstConnect;
     char empty[size];
@@ -185,7 +179,7 @@ int main(int argc, char *argv[])
     memset(message, 0, size);
     struct timeval tv = {3, 0};
 
-    while (cpCheckError(clientSocket) == 0 && cpCheckError(telnetSocket) == 0)
+    while (portableCheckError(clientSocket) == 0 && portableCheckError(telnetSocket) == 0)
     {
         reset(&readfds, telnetSocket->socket, clientSocket->socket, clientAccept->socket);
         struct timeval tv2 = {3, 0};
@@ -220,7 +214,7 @@ int main(int argc, char *argv[])
             recvMessageStruct(&messageStruct, clientSocket);
             if (messageStruct.type == NEW_CONNECTION)
             {
-                cpClose(telnetSocket);
+                portableClose(telnetSocket);
                 telnetSocket = getTelnet();
                 int socketN[] = {telnetSocket->socket, clientSocket->socket};
                 n = getNForSelect(socketN, 2);
@@ -232,7 +226,7 @@ int main(int argc, char *argv[])
         }
         if (selectVal == 0 && isClientConnected == 1)
         {
-            cpClose(clientSocket);
+            portableClose(clientSocket);
             isClientConnected = 0;
             int socketN[] = {telnetSocket->socket, clientAccept->socket};
             n = getNForSelect(socketN, 2);
@@ -240,9 +234,9 @@ int main(int argc, char *argv[])
         }
     }
 
-    cpClose(clientAccept);
-    cpClose(clientSocket);
-    cpClose(telnetSocket);
-    cpCloseNetwork();
+    portableClose(clientAccept);
+    portableClose(clientSocket);
+    portableClose(telnetSocket);
+    portableCloseNetwork();
     return 0;
 }

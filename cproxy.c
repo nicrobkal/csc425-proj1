@@ -7,9 +7,8 @@
 #include "message.h"
 
 int selectVal;
-int clientPort;
 char *serverAddr;
-int serverPort;
+int clientPort, serverPort;
 int lostHeartbeats;
 struct PortableSocket *telnetAcceptorSocket;
 struct PortableSocket *telnetSocket;
@@ -42,21 +41,21 @@ void parseInput(int argc, char *argv[])
 
 struct PortableSocket *getTelnetAcceptor()
 {
-    struct PortableSocket *telnetAcceptorSocket = cpSocket(100, "127.0.0.1", clientPort);
-    if (cpCheckError(telnetAcceptorSocket) != 0)
+    struct PortableSocket *telnetAcceptorSocket = createSocket("127.0.0.1", clientPort);
+    if (portableCheckError(telnetAcceptorSocket) != 0)
     {
         fprintf(stderr, "Failed to create telnet acceptor socket\n");
         exit(1);
     }
-    cpBind(telnetAcceptorSocket);
-    cpListen(telnetAcceptorSocket, 5);
+    portableBind(telnetAcceptorSocket);
+    portableListen(telnetAcceptorSocket, 5);
     return telnetAcceptorSocket;
 }
 
 struct PortableSocket *getTelnet(struct PortableSocket *telnetAcceptorSocket)
 {
     struct PortableSocket *telnetSocket = cpAccept(telnetAcceptorSocket);
-    if (cpCheckError(telnetSocket) != 0)
+    if (portableCheckError(telnetSocket) != 0)
     {
         fprintf(stderr, "Failed to create telnet socket \n");
         exit(1);
@@ -66,9 +65,9 @@ struct PortableSocket *getTelnet(struct PortableSocket *telnetAcceptorSocket)
 
 struct PortableSocket *getSproxy()
 {
-    struct PortableSocket *sproxySocket = cpSocket(100, serverAddr, serverPort);
-    cpConnect(sproxySocket);
-    if (cpCheckError(sproxySocket) != 0)
+    struct PortableSocket *sproxySocket = createSocket(serverAddr, serverPort);
+    portableConnect(sproxySocket);
+    if (portableCheckError(sproxySocket) != 0)
     {
         fprintf(stderr, "Failed to create sproxy socket\n");
         exit(1);
@@ -89,20 +88,20 @@ void reset(fd_set *readfds, int telnetSocket, int serverSocket)
 
 int forward(struct PortableSocket *sender, struct PortableSocket *reciever, char *message, char *senderName)
 {
-    int messageSize = cpRecv(sender, message, size);
-    if (cpCheckError(sender) != 0)
+    int messageSize = portableRecv(sender, message, size);
+    if (portableCheckError(sender) != 0)
     {
         return -1;
     } 
     struct message messageStruct;
-    initMessageStruct(&messageStruct, MESSAGE, messageSize, message);
+    createMessage(&messageStruct, MESSAGE, messageSize, message);
     sendMessageStruct(&messageStruct, reciever);
     return messageSize;
 }
 
 int sendMessage(struct PortableSocket *reciever, char *message, int messageSize)
 {
-    cpSend(reciever, message, messageSize);
+    portableSend(reciever, message, messageSize);
     memset(message, 0, messageSize);
     return 0;
 }
@@ -132,7 +131,7 @@ void sendHeartbeat(struct PortableSocket *reciever)
     struct message messageStruct;
     char empty[0];
     empty[0] = '\0';
-    initMessageStruct(&messageStruct, HEARTBEAT, 0, empty);
+    createMessage(&messageStruct, HEARTBEAT, 0, empty);
     sendMessageStruct(&messageStruct, reciever);
 }
 
@@ -152,7 +151,7 @@ int main(int argc, char *argv[])
     struct message newConnectStruct;
     char empty[0];
     empty[0] = '\0';
-    initMessageStruct(&newConnectStruct, NEW_CONNECTION, 0, empty);
+    createMessage(&newConnectStruct, NEW_CONNECTION, 0, empty);
     sendMessageStruct(&newConnectStruct, sproxySocket);
 
     fd_set readfds;
@@ -162,7 +161,7 @@ int main(int argc, char *argv[])
     memset(message, 0, size);
     struct timeval tv = {1, 0};
 
-    while (cpCheckError(sproxySocket) == 0 && cpCheckError(telnetSocket) == 0)
+    while (portableCheckError(sproxySocket) == 0 && portableCheckError(telnetSocket) == 0)
     {
         reset(&readfds, telnetSocket->socket, sproxySocket->socket);
         struct timeval tv2 = {1, 0};
@@ -187,32 +186,32 @@ int main(int argc, char *argv[])
         if (FD_ISSET(telnetAcceptorSocket->socket, &readfds))
         {
             printf("Detected new telnet session");
-            cpClose(telnetSocket);
+            portableClose(telnetSocket);
             telnetSocket = getTelnet(telnetAcceptorSocket);
             struct message reconnectStruct;
             char empty[0];
             empty[0] = '\0';
-            initMessageStruct(&reconnectStruct, NEW_CONNECTION, 0, empty);
+            createMessage(&reconnectStruct, NEW_CONNECTION, 0, empty);
             sendMessageStruct(&reconnectStruct, sproxySocket);
             int socketN[] = {sproxySocket->socket, telnetSocket->socket, telnetAcceptorSocket->socket};
             n = getNForSelect(socketN, 3);
         }
         if (lostHeartbeats > 3)
         {
-            cpClose(sproxySocket);
+            portableClose(sproxySocket);
             sproxySocket = getSproxy();
             struct message reconnectStruct;
             char empty[0];
             empty[0] = '\0';
-            initMessageStruct(&reconnectStruct, RECONNECT, 0, empty);
+            createMessage(&reconnectStruct, RECONNECT, 0, empty);
             sendMessageStruct(&reconnectStruct, sproxySocket);
             lostHeartbeats = 0;
         }
     }
 
-    cpClose(telnetAcceptorSocket);
-    cpClose(telnetSocket);
-    cpClose(sproxySocket);
-    cpCloseNetwork();
+    portableClose(telnetAcceptorSocket);
+    portableClose(telnetSocket);
+    portableClose(sproxySocket);
+    portableCloseNetwork();
     return 0;
 }

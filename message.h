@@ -16,7 +16,7 @@ typedef struct message
   char * payload;
 } message;
 
-void initMessageStruct(struct message * this, int type, int length, char * payload);
+void createMessage(struct message * this, int type, int length, char * payload);
 
 void sendMessageStruct(struct message * this, struct PortableSocket * reciever);
 
