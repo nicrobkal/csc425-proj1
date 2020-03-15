@@ -7,7 +7,7 @@
 
 #include <string.h>
 #include <stdio.h>
-#include "PortableSocket.h"
+#include "portablesocket.h"
 
 typedef struct message
 {

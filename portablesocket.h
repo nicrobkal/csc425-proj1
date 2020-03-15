@@ -1,22 +1,12 @@
 /*
- * PortableSocket.h
- * A socket interface compatiable on Windows and Ubuntu
- *
- *  Created on: Jan 23, 2017
- *      Author: Jonathon Davis
+ * 
  */
 
 #ifndef PORTABLE_SOCKET
 #define PORTABLE_SOCKET
-//loads the two seperate socket libraries
-#ifdef __WIN32__
-# include <winsock2.h>
-#else
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#endif
-//loads common libraries that will be needed
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
