@@ -17,7 +17,6 @@ struct PortableSocket *sproxySocket;
 int n;
 int size = 1024;
 
-//gets the value of n for select
 int getN(int socket[], int numberOfSockets)
 {
     int max = -1;
@@ -25,12 +24,13 @@ int getN(int socket[], int numberOfSockets)
     for (i = 0; i < numberOfSockets; i++)
     {
         if (socket[i] > max)
+        {
             max = socket[i];
+        }
     }
     return max + 1;
 }
 
-//parses the input
 void parseInput(int argc, char *argv[])
 {
     int current = 1;
@@ -40,7 +40,6 @@ void parseInput(int argc, char *argv[])
     serverPort = atoi(argv[current++]);
 }
 
-//get the telnetAcceptorSocket
 struct PortableSocket *getTelnetAcceptor()
 {
     struct PortableSocket *telnetAcceptorSocket = cpSocket(100, "127.0.0.1", clientPort);
@@ -54,7 +53,6 @@ struct PortableSocket *getTelnetAcceptor()
     return telnetAcceptorSocket;
 }
 
-//get the telnetSocket
 struct PortableSocket *getTelnet(struct PortableSocket *telnetAcceptorSocket)
 {
     struct PortableSocket *telnetSocket = cpAccept(telnetAcceptorSocket);
@@ -78,7 +76,6 @@ struct PortableSocket *getSproxy()
     return sproxySocket;
 }
 
-// resets the select method, to be used again
 void reset(fd_set *readfds, int telnetSocket, int serverSocket)
 {
     FD_CLR(telnetSocket, readfds);
@@ -90,20 +87,19 @@ void reset(fd_set *readfds, int telnetSocket, int serverSocket)
     FD_SET(telnetAcceptorSocket->socket, readfds);
 }
 
-//forwards a message from the sender socket to the reciever socket
 int forward(struct PortableSocket *sender, struct PortableSocket *reciever, char *message, char *senderName)
 {
-    // print "recieved from telnet 'message' sending to sproxy"
     int messageSize = cpRecv(sender, message, size);
     if (cpCheckError(sender) != 0)
+    {
         return -1;
+    } 
     struct message messageStruct;
     initMessageStruct(&messageStruct, MESSAGE, messageSize, message);
     sendMessageStruct(&messageStruct, reciever);
     return messageSize;
 }
 
-//forwards a message from the sender socket to the reciever socket
 int sendMessage(struct PortableSocket *reciever, char *message, int messageSize)
 {
     cpSend(reciever, message, messageSize);
@@ -147,38 +143,25 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    /*
-  * Parse the inputs
-  */
     parseInput(argc, argv);
 
-    /*
-  * Connection to the local telnet
-  */
     telnetAcceptorSocket = getTelnetAcceptor();
     telnetSocket = getTelnet(telnetAcceptorSocket);
 
-    /*
-  * Create connection to sproxy
-  */
     sproxySocket = getSproxy();
     struct message newConnectStruct;
     char empty[0];
     empty[0] = '\0';
     initMessageStruct(&newConnectStruct, NEW_CONNECTION, 0, empty);
     sendMessageStruct(&newConnectStruct, sproxySocket);
-    /*
-  * set up data for the program
-  */
+
     fd_set readfds;
     int socketN[] = {sproxySocket->socket, telnetSocket->socket, telnetAcceptorSocket->socket};
     n = getN(socketN, 3);
     char message[size];
     memset(message, 0, size);
     struct timeval tv = {1, 0};
-    /*
-  * run the program
-  */
+
     while (cpCheckError(sproxySocket) == 0 && cpCheckError(telnetSocket) == 0)
     {
         reset(&readfds, telnetSocket->socket, sproxySocket->socket);
@@ -189,7 +172,6 @@ int main(int argc, char *argv[])
             sendHeartbeat(sproxySocket);
             tv = tv2;
         }
-        // foward the message
         if (FD_ISSET(telnetSocket->socket, &readfds))
         {
             int result = forward(telnetSocket, sproxySocket, message, "telnet");
@@ -228,9 +210,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    /*
-    * Close the connections
-    */
     cpClose(telnetAcceptorSocket);
     cpClose(telnetSocket);
     cpClose(sproxySocket);

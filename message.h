@@ -20,6 +20,6 @@ void initMessageStruct(struct message * this, int type, int length, char * paylo
 
 void sendMessageStruct(struct message * this, struct PortableSocket * reciever);
 
-int recvMessageStruct(struct message * this, struct PortableSocket * sender);
+void recvMessageStruct(struct message * this, struct PortableSocket * sender);
 
 #endif
