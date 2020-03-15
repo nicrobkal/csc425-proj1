@@ -32,7 +32,7 @@ int getNForSelect(int socket[], int numSockets)
 
 struct PortableSocket *getClient(struct PortableSocket *clientAccept)
 {
-    struct PortableSocket *client = cpAccept(clientAccept);
+    struct PortableSocket *client = portableAccept(clientAccept);
     if (portableCheckError(client) != 0)
     {
         fprintf(stderr, "Failed to create client socket \n");
@@ -146,6 +146,7 @@ int main(int argc, char *argv[])
     }
 
     parseInput(argc, argv);
+    
     clientAccept = createSocket("localhost", serverPort);
     if (portableCheckError(clientAccept) != 0)
     {
@@ -156,8 +157,8 @@ int main(int argc, char *argv[])
     portableListen(clientAccept, 5);
 
     /**/
-    struct PortableSocket *client = cpAccept(clientAccept);
-    if (portableCheckError(client) != 0)
+    clientSocket = portableAccept(clientAccept);
+    if (portableCheckError(clientSocket) != 0)
     {
         fprintf(stderr, "Failed to connect to client. Terminating.\n");
         return 1;

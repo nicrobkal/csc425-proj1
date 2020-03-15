@@ -54,7 +54,7 @@ struct PortableSocket *getTelnetAcceptor()
 
 struct PortableSocket *getTelnet(struct PortableSocket *telnetAcceptorSocket)
 {
-    struct PortableSocket *telnetSocket = cpAccept(telnetAcceptorSocket);
+    struct PortableSocket *telnetSocket = portableAccept(telnetAcceptorSocket);
     if (portableCheckError(telnetSocket) != 0)
     {
         fprintf(stderr, "Failed to create telnet socket \n");

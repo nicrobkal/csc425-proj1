@@ -25,7 +25,7 @@ int portableBind(struct PortableSocket * socket);
 
 int portableListen(struct PortableSocket * socket, int bufferSize);
 
-struct PortableSocket * cpAccept(struct PortableSocket * socket);
+struct PortableSocket * portableAccept(struct PortableSocket * socket);
 
 int portableConnect(struct PortableSocket * socket);
 

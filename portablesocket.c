@@ -49,7 +49,7 @@ int portableListen(struct PortableSocket *socket, int bufferSize)
  * a connection to the socket, this will create a new PortableSocket that
  * can then be used to communicate will the client socket.
  */
-struct PortableSocket *cpAccept(struct PortableSocket *socket)
+struct PortableSocket *portableAccept(struct PortableSocket *socket)
 {
     int clientSocket = accept(socket->socket, NULL, NULL);
     struct PortableSocket *newPS = malloc(sizeof(struct PortableSocket));
