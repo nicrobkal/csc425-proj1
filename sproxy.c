@@ -12,9 +12,9 @@ int isClientConnected = 0;
 int n = 0;
 int size = 1024;
 
-struct PortableSocket *clientAccept;
-struct PortableSocket *clientSocket;
-struct PortableSocket *telnetSocket;
+struct portableSocket *clientAccept;
+struct portableSocket *clientSocket;
+struct portableSocket *telnetSocket;
 
 int getNForSelect(int socket[], int numSockets)
 {
@@ -30,9 +30,9 @@ int getNForSelect(int socket[], int numSockets)
     return max + 1;
 }
 
-struct PortableSocket *getClient(struct PortableSocket *clientAccept)
+struct portableSocket *getClient(struct portableSocket *clientAccept)
 {
-    struct PortableSocket *client = portableAccept(clientAccept);
+    struct portableSocket *client = portableAccept(clientAccept);
     if (portableCheckError(client) != 0)
     {
         fprintf(stderr, "Failed to create client socket \n");
@@ -42,9 +42,9 @@ struct PortableSocket *getClient(struct PortableSocket *clientAccept)
     return client;
 }
 
-struct PortableSocket *getTelnet()
+struct portableSocket *getTelnet()
 {
-    struct PortableSocket *telnetSocket = createSocket("127.0.0.1", 23);
+    struct portableSocket *telnetSocket = createSocket("127.0.0.1", 23);
     portableConnect(telnetSocket);
     if (portableCheckError(telnetSocket) != 0)
     {
@@ -71,7 +71,7 @@ void reset(fd_set *readfds, int telnetSocket, int clientSocket, int clientAccept
     FD_SET(telnetSocket, readfds);
 }
 
-int forward(struct PortableSocket *sender, struct PortableSocket *reciever, char *message, char *senderName)
+int forward(struct portableSocket *sender, struct portableSocket *reciever, char *message, char *senderName)
 {
     int messageSize = portableRecv(sender, message, size);
     if (portableCheckError(sender) != 0)
@@ -88,14 +88,14 @@ int forward(struct PortableSocket *sender, struct PortableSocket *reciever, char
     return messageSize;
 }
 
-int sendMessage(struct PortableSocket *reciever, char *message, int messageSize)
+int sendMessage(struct portableSocket *reciever, char *message, int messageSize)
 {
     portableSend(reciever, message, messageSize);
     memset(message, 0, size);
     return 0;
 }
 
-void sendHeartbeat(struct PortableSocket *reciever)
+void sendHeartbeat(struct portableSocket *reciever)
 {
     struct message messageStruct;
     char empty[0];
@@ -104,7 +104,7 @@ void sendHeartbeat(struct PortableSocket *reciever)
     sendMessageStruct(&messageStruct, reciever);
 }
 
-int recvMessage(struct PortableSocket *sender, struct PortableSocket *reciever)
+int recvMessage(struct portableSocket *sender, struct portableSocket *reciever)
 {
     struct message messageStruct;
     char message[size];
@@ -131,13 +131,6 @@ int recvMessage(struct PortableSocket *sender, struct PortableSocket *reciever)
     return messageStruct.length;
 }
 
-void parseInput(int argc, char *argv[])
-{
-    int current = 1;
-    selectVal = 0;
-    serverPort = atoi(argv[current++]);
-}
-
 int main(int argc, char *argv[])
 {
     if (argc < 2)
@@ -145,7 +138,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    parseInput(argc, argv);
+    selectVal = 0;
+    serverPort = atoi(argv[1]);
     
     clientAccept = createSocket("localhost", serverPort);
     if (portableCheckError(clientAccept) != 0)
@@ -156,7 +150,6 @@ int main(int argc, char *argv[])
     portableBind(clientAccept);
     portableListen(clientAccept, 5);
 
-    /**/
     clientSocket = portableAccept(clientAccept);
     if (portableCheckError(clientSocket) != 0)
     {
@@ -164,8 +157,6 @@ int main(int argc, char *argv[])
         return 1;
     }
     isClientConnected = 1;
-    /**/
-    //clientSocket = getClient(clientAccept);
 
     struct message firstConnect;
     char empty[size];

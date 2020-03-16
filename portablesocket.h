@@ -13,29 +13,29 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-struct PortableSocket {
+struct portableSocket {
 	int socket;
 	struct sockaddr_in address;
 	int error;
 };
 
-struct PortableSocket * createSocket(char * address, int port);
+struct portableSocket * createSocket(char * address, int port);
 
-int portableBind(struct PortableSocket * socket);
+int portableBind(struct portableSocket * socket);
 
-int portableListen(struct PortableSocket * socket, int bufferSize);
+int portableListen(struct portableSocket * socket, int bufferSize);
 
-struct PortableSocket * portableAccept(struct PortableSocket * socket);
+struct portableSocket * portableAccept(struct portableSocket * socket);
 
-int portableConnect(struct PortableSocket * socket);
+int portableConnect(struct portableSocket * socket);
 
-int portableSend(struct PortableSocket * socket, char* message, int messageSize);
+int portableSend(struct portableSocket * socket, char* message, int messageSize);
 
-int portableRecv(struct PortableSocket * socket, char* message, int bufferSize);
+int portableRecv(struct portableSocket * socket, char* message, int bufferSize);
 
-int portableClose(struct PortableSocket* socket);
+int portableClose(struct portableSocket* socket);
 
 int portableCloseNetwork();
 
-int portableCheckError(struct PortableSocket * socket);
+int portableCheckError(struct portableSocket * socket);
 #endif

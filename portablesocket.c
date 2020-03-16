@@ -4,9 +4,9 @@
 
 #include "portablesocket.h"
 
-int portableCheckError(struct PortableSocket *socket);
+int portableCheckError(struct portableSocket *socket);
 
-struct PortableSocket *createSocket(char *address, int port)
+struct portableSocket *createSocket(char *address, int port)
 {
     int newSocket = socket(PF_INET, SOCK_STREAM, 0);
 
@@ -24,7 +24,7 @@ struct PortableSocket *createSocket(char *address, int port)
         sock_address.sin_addr.s_addr = inet_addr(address);
     }
 
-    struct PortableSocket *newPS = malloc(sizeof(struct PortableSocket));
+    struct portableSocket *newPS = malloc(sizeof(struct portableSocket));
     newPS->socket = newSocket;
     newPS->address = sock_address;
     newPS->error = newSocket;
@@ -32,13 +32,13 @@ struct PortableSocket *createSocket(char *address, int port)
     return newPS;
 }
 
-int portableBind(struct PortableSocket *socket)
+int portableBind(struct portableSocket *socket)
 {
     socket->error = bind(socket->socket, (struct sockaddr *)&socket->address, sizeof(socket->address));
     return portableCheckError(socket);
 }
 
-int portableListen(struct PortableSocket *socket, int bufferSize)
+int portableListen(struct portableSocket *socket, int bufferSize)
 {
     socket->error = listen(socket->socket, bufferSize);
     return portableCheckError(socket);
@@ -46,13 +46,13 @@ int portableListen(struct PortableSocket *socket, int bufferSize)
 
 /*
  * the acceptConnection function is a blocking call that will accept
- * a connection to the socket, this will create a new PortableSocket that
+ * a connection to the socket, this will create a new portableSocket that
  * can then be used to communicate will the client socket.
  */
-struct PortableSocket *portableAccept(struct PortableSocket *socket)
+struct portableSocket *portableAccept(struct portableSocket *socket)
 {
     int clientSocket = accept(socket->socket, NULL, NULL);
-    struct PortableSocket *newPS = malloc(sizeof(struct PortableSocket));
+    struct portableSocket *newPS = malloc(sizeof(struct portableSocket));
     newPS->socket = clientSocket;
     newPS->address = socket->address;
     newPS->error = clientSocket;
@@ -65,7 +65,7 @@ struct PortableSocket *portableAccept(struct PortableSocket *socket)
  * with. The connect function takes one parameter, which is the socket. The function returns
  * 0 if the connections was established, and returns an error code otherwise.
  */
-int portableConnect(struct PortableSocket *socket)
+int portableConnect(struct portableSocket *socket)
 {
     socket->error = connect(socket->socket, (struct sockaddr *)&socket->address, sizeof(socket->address));
     return portableCheckError(socket);
@@ -76,7 +76,7 @@ int portableConnect(struct PortableSocket *socket)
  * the socket. The first parameter is the socket that will be transmiting the message.
  * The second parameter will be the message that is being transmitted.
  */
-int portableSend(struct PortableSocket *socket, char *message, int messageSize)
+int portableSend(struct portableSocket *socket, char *message, int messageSize)
 {
     char *buffer = message;
     int length = messageSize;
@@ -102,7 +102,7 @@ int portableSend(struct PortableSocket *socket, char *message, int messageSize)
  * the variable the message being recieved will be stored. The third parameter is
  * The bufferSize of the message.
  */
-int portableRecv(struct PortableSocket *socket, char *message, int bufferSize)
+int portableRecv(struct portableSocket *socket, char *message, int bufferSize)
 {
     socket->error = recv(socket->socket, message, bufferSize, 0);
     return (socket->error < 0) ? portableCheckError(socket) : socket->error;
@@ -112,7 +112,7 @@ int portableRecv(struct PortableSocket *socket, char *message, int bufferSize)
  * The closeSocket function will close the inputed socket, and free the memory used
  * by the socket. returns 0 if successful, error code otherwise.
  */
-int portableClose(struct PortableSocket *socket)
+int portableClose(struct portableSocket *socket)
 {
     socket->error = close(socket->socket);
     int error = portableCheckError(socket);
@@ -134,7 +134,7 @@ int portableCloseNetwork()
  * checks to see if an error has occured and returns the error code, also sets
  * the Portable Sockets error field.
  */
-int portableCheckError(struct PortableSocket *socket)
+int portableCheckError(struct portableSocket *socket)
 {
     if (socket->error < 0)
     {

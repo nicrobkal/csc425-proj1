@@ -7,7 +7,7 @@ void createMessage(struct message *this, int type, int length, char *payload)
     this->payload = payload;
 }
 
-void sendMessageStruct(struct message *this, struct PortableSocket *reciever)
+void sendMessageStruct(struct message *this, struct portableSocket *reciever)
 {
     char header[10];
     memset(header, 0, 10);
@@ -16,7 +16,7 @@ void sendMessageStruct(struct message *this, struct PortableSocket *reciever)
     portableSend(reciever, this->payload, this->length);
 }
 
-void recvMessageStruct(struct message *this, struct PortableSocket *sender)
+void recvMessageStruct(struct message *this, struct portableSocket *sender)
 {
     char header[10];
     memset(header, 0, 10);

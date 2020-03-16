@@ -10,16 +10,16 @@ int selectVal;
 char *serverAddr;
 int clientPort, serverPort;
 int lostHeartbeats;
-struct PortableSocket *telnetAcceptorSocket;
-struct PortableSocket *telnetSocket;
-struct PortableSocket *sproxySocket;
+struct portableSocket *telnetAcceptorSocket;
+struct portableSocket *telnetSocket;
+struct portableSocket *sproxySocket;
 int n;
 int size = 1024;
 
 int getNForSelect(int socket[], int numSockets)
 {
     int max = -1;
-    int i = 0;
+    int i;
     for (i = 0; i < numSockets; i++)
     {
         if (socket[i] > max)
@@ -30,18 +30,9 @@ int getNForSelect(int socket[], int numSockets)
     return max + 1;
 }
 
-void parseInput(int argc, char *argv[])
+struct portableSocket *getTelnetAcceptor()
 {
-    int curr = 1;
-    selectVal = 0;
-    clientPort = atoi(argv[curr++]);
-    serverAddr = argv[curr++];
-    serverPort = atoi(argv[curr++]);
-}
-
-struct PortableSocket *getTelnetAcceptor()
-{
-    struct PortableSocket *telnetAcceptorSocket = createSocket("127.0.0.1", clientPort);
+    struct portableSocket *telnetAcceptorSocket = createSocket("127.0.0.1", clientPort);
     if (portableCheckError(telnetAcceptorSocket) != 0)
     {
         fprintf(stderr, "Failed to create telnet acceptor socket\n");
@@ -52,9 +43,9 @@ struct PortableSocket *getTelnetAcceptor()
     return telnetAcceptorSocket;
 }
 
-struct PortableSocket *getTelnet(struct PortableSocket *telnetAcceptorSocket)
+struct portableSocket *getTelnet(struct portableSocket *telnetAcceptorSocket)
 {
-    struct PortableSocket *telnetSocket = portableAccept(telnetAcceptorSocket);
+    struct portableSocket *telnetSocket = portableAccept(telnetAcceptorSocket);
     if (portableCheckError(telnetSocket) != 0)
     {
         fprintf(stderr, "Failed to create telnet socket \n");
@@ -63,9 +54,9 @@ struct PortableSocket *getTelnet(struct PortableSocket *telnetAcceptorSocket)
     return telnetSocket;
 }
 
-struct PortableSocket *getSproxy()
+struct portableSocket *getSproxy()
 {
-    struct PortableSocket *sproxySocket = createSocket(serverAddr, serverPort);
+    struct portableSocket *sproxySocket = createSocket(serverAddr, serverPort);
     portableConnect(sproxySocket);
     if (portableCheckError(sproxySocket) != 0)
     {
@@ -86,7 +77,7 @@ void reset(fd_set *readfds, int telnetSocket, int serverSocket)
     FD_SET(telnetAcceptorSocket->socket, readfds);
 }
 
-int forward(struct PortableSocket *sender, struct PortableSocket *reciever, char *message, char *senderName)
+int forward(struct portableSocket *sender, struct portableSocket *reciever, char *message, char *senderName)
 {
     int messageSize = portableRecv(sender, message, size);
     if (portableCheckError(sender) != 0)
@@ -99,14 +90,14 @@ int forward(struct PortableSocket *sender, struct PortableSocket *reciever, char
     return messageSize;
 }
 
-int sendMessage(struct PortableSocket *reciever, char *message, int messageSize)
+int sendMessage(struct portableSocket *reciever, char *message, int messageSize)
 {
     portableSend(reciever, message, messageSize);
     memset(message, 0, messageSize);
     return 0;
 }
 
-int recvMessage(struct PortableSocket *sender, struct PortableSocket *reciever)
+int recvMessage(struct portableSocket *sender, struct portableSocket *reciever)
 {
     struct message messageStruct;
     char message[size];
@@ -125,7 +116,7 @@ int recvMessage(struct PortableSocket *sender, struct PortableSocket *reciever)
     return messageStruct.length;
 }
 
-void sendHeartbeat(struct PortableSocket *reciever)
+void sendHeartbeat(struct portableSocket *reciever)
 {
     lostHeartbeats++;
     struct message messageStruct;
@@ -142,7 +133,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    parseInput(argc, argv);
+    selectVal = 0;
+    clientPort = atoi(argv[1]);
+    serverAddr = argv[2];
+    serverPort = atoi(argv[3]);
 
     telnetAcceptorSocket = getTelnetAcceptor();
     telnetSocket = getTelnet(telnetAcceptorSocket);

@@ -18,8 +18,8 @@ typedef struct message
 
 void createMessage(struct message * this, int type, int length, char * payload);
 
-void sendMessageStruct(struct message * this, struct PortableSocket * reciever);
+void sendMessageStruct(struct message * this, struct portableSocket * reciever);
 
-void recvMessageStruct(struct message * this, struct PortableSocket * sender);
+void recvMessageStruct(struct message * this, struct portableSocket * sender);
 
 #endif
