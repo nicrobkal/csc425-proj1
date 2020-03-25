@@ -1,18 +1,12 @@
-.PHONY: all clean copy
-
-all: sproxy cproxy copy
-
-copy:
+main : sproxy cproxy
 	cp * ../10
 
-%.o: %.c message.h portablesocket.h
-	gcc -Wall -g -c -o $@ $<
+sproxy : sproxy.c
+	gcc -g -Wall -o sproxy sproxy.c
 
-cproxy: cproxy.o portablesocket.o message.o
-	gcc -Wall -g -o $@ $^
+cproxy : cproxy.c
+	gcc -g -Wall -o cproxy cproxy.c
 
-sproxy: sproxy.o portablesocket.o message.o
-	gcc -Wall -g -o $@ $^
-
-clean:
-	rm *.o sproxy cproxy
+.PHONY: clean
+clean :
+	rm -f *.o client server

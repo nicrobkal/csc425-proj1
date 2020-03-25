@@ -1,211 +1,184 @@
+#include <stdio.h> 
+#include <sys/socket.h>
+#include <sys/select.h> 
+#include <arpa/inet.h> 
+#include <unistd.h> 
+#include <string.h> 
+#include <stdlib.h>
+
 /*
- * Client-side program to create seamless connection for a telnet session intending to move between WiFi networks
+ * Sends all data packets in stream
  */
-
-#include "portablesocket.h"
-#include <sys/select.h>
-#include "message.h"
-
-int selectVal;
-char *serverAddr;
-int clientPort, serverPort;
-int lostHeartbeats;
-struct portableSocket *telnetAcceptorSocket;
-struct portableSocket *telnetSocket;
-struct portableSocket *sproxySocket;
-int n;
-int size = 1024;
-
-int getNForSelect(int socket[], int numSockets)
+int sendAll(int s, char *buf, int *len)
 {
-    int max = -1;
-    int i;
-    for (i = 0; i < numSockets; i++)
-    {
-        if (socket[i] > max)
-        {
-            max = socket[i];
-        }
-    }
-    return max + 1;
-}
+    int total = 0;        // how many bytes we've sent
+    int bytesleft = *len; // how many we have left to send
+    int n;
 
-struct portableSocket *getTelnetAcceptor()
-{
-    struct portableSocket *telnetAcceptorSocket = createSocket("127.0.0.1", clientPort);
-    if (portableCheckError(telnetAcceptorSocket) != 0)
-    {
-        fprintf(stderr, "Failed to create telnet acceptor socket\n");
-        exit(1);
-    }
-    portableBind(telnetAcceptorSocket);
-    portableListen(telnetAcceptorSocket, 5);
-    return telnetAcceptorSocket;
-}
-
-struct portableSocket *getTelnet(struct portableSocket *telnetAcceptorSocket)
-{
-    struct portableSocket *telnetSocket = portableAccept(telnetAcceptorSocket);
-    if (portableCheckError(telnetSocket) != 0)
-    {
-        fprintf(stderr, "Failed to create telnet socket \n");
-        exit(1);
-    }
-    return telnetSocket;
-}
-
-struct portableSocket *getSproxy()
-{
-    struct portableSocket *sproxySocket = createSocket(serverAddr, serverPort);
-    portableConnect(sproxySocket);
-    if (portableCheckError(sproxySocket) != 0)
-    {
-        fprintf(stderr, "Failed to create sproxy socket\n");
-        exit(1);
-    }
-    return sproxySocket;
-}
-
-void reset(fd_set *readfds, int telnetSocket, int serverSocket)
-{
-    FD_CLR(telnetSocket, readfds);
-    FD_CLR(serverSocket, readfds);
-    FD_CLR(telnetAcceptorSocket->socket, readfds);
-    FD_ZERO(readfds);
-    FD_SET(serverSocket, readfds);
-    FD_SET(telnetSocket, readfds);
-    FD_SET(telnetAcceptorSocket->socket, readfds);
-}
-
-int forward(struct portableSocket *sender, struct portableSocket *reciever, char *message, char *senderName)
-{
-    int messageSize = portableRecv(sender, message, size);
-    if (portableCheckError(sender) != 0)
-    {
-        return -1;
-    } 
-    struct message messageStruct;
-    createMessage(&messageStruct, MESSAGE, messageSize, message);
-    sendMessageStruct(&messageStruct, reciever);
-    return messageSize;
-}
-
-int sendMessage(struct portableSocket *reciever, char *message, int messageSize)
-{
-    portableSend(reciever, message, messageSize);
-    memset(message, 0, messageSize);
-    return 0;
-}
-
-int recvMessage(struct portableSocket *sender, struct portableSocket *reciever)
-{
-    struct message messageStruct;
-    char message[size];
-    messageStruct.payload = message;
-    recvMessageStruct(&messageStruct, sender);
-    if (messageStruct.type == MESSAGE)
-    {
-        sendMessage(reciever, messageStruct.payload, messageStruct.length);
-    }
-    else if (messageStruct.type == HEARTBEAT)
-    {
-        printf("recived heartbeat reply\n");
-        lostHeartbeats = 0;
-        return 1;
-    }
-    return messageStruct.length;
-}
-
-void sendHeartbeat(struct portableSocket *reciever)
-{
-    lostHeartbeats++;
-    struct message messageStruct;
-    char empty[0];
-    empty[0] = '\0';
-    createMessage(&messageStruct, HEARTBEAT, 0, empty);
-    sendMessageStruct(&messageStruct, reciever);
-}
-
-int main(int argc, char *argv[])
-{
-    if (argc != 4)
-    {
-        return 1;
+    while(total < *len) {
+        n = send(s, buf+total, bytesleft, 0);
+        if (n == -1) { break; }
+        total += n;
+        bytesleft -= n;
     }
 
-    selectVal = 0;
-    clientPort = atoi(argv[1]);
-    serverAddr = argv[2];
-    serverPort = atoi(argv[3]);
+    *len = total; // return number actually sent here
 
-    telnetAcceptorSocket = getTelnetAcceptor();
-    telnetSocket = getTelnet(telnetAcceptorSocket);
+    return n==-1?-1:0; // return -1 on failure, 0 on success
+}
 
-    sproxySocket = getSproxy();
-    struct message newConnectStruct;
-    char empty[0];
-    empty[0] = '\0';
-    createMessage(&newConnectStruct, NEW_CONNECTION, 0, empty);
-    sendMessageStruct(&newConnectStruct, sproxySocket);
-
+int main(int argc, char *argv[]) 
+{ 
+    int serverSock = 0, telnetSock = 0, telnetAccept = 0;
+    int maxLen = 1025;
+    struct sockaddr_in telnetAddr;
+    int telnetAddrLen = sizeof(telnetAddr);
+    struct sockaddr_in serverAddr;
     fd_set readfds;
-    int socketN[] = {sproxySocket->socket, telnetSocket->socket, telnetAcceptorSocket->socket};
-    n = getNForSelect(socketN, 3);
-    char message[size];
-    memset(message, 0, size);
-    struct timeval tv = {1, 0};
+    char telnetBuff[1025] = {0};
+    char serverBuff[1025] = {0};
 
-    while (portableCheckError(sproxySocket) == 0 && portableCheckError(telnetSocket) == 0)
+    //Check if arguments are valid
+    if(argc != 4)
     {
-        reset(&readfds, telnetSocket->socket, sproxySocket->socket);
-        struct timeval tv2 = {1, 0};
-        selectVal = select(n, &readfds, NULL, NULL, &tv);
-        if (selectVal == 0)
-        {
-            sendHeartbeat(sproxySocket);
-            tv = tv2;
-        }
-        if (FD_ISSET(telnetSocket->socket, &readfds))
-        {
-            int result = forward(telnetSocket, sproxySocket, message, "telnet");
-            if (result <= 0)
-                break;
-        }
-        if (FD_ISSET(sproxySocket->socket, &readfds))
-        {
-            int result = recvMessage(sproxySocket, telnetSocket);
-            if (result <= 0)
-                break;
-        }
-        if (FD_ISSET(telnetAcceptorSocket->socket, &readfds))
-        {
-            printf("Detected new telnet session");
-            portableClose(telnetSocket);
-            telnetSocket = getTelnet(telnetAcceptorSocket);
-            struct message reconnectStruct;
-            char empty[0];
-            empty[0] = '\0';
-            createMessage(&reconnectStruct, NEW_CONNECTION, 0, empty);
-            sendMessageStruct(&reconnectStruct, sproxySocket);
-            int socketN[] = {sproxySocket->socket, telnetSocket->socket, telnetAcceptorSocket->socket};
-            n = getNForSelect(socketN, 3);
-        }
-        if (lostHeartbeats > 3)
-        {
-            portableClose(sproxySocket);
-            sproxySocket = getSproxy();
-            struct message reconnectStruct;
-            char empty[0];
-            empty[0] = '\0';
-            createMessage(&reconnectStruct, RECONNECT, 0, empty);
-            sendMessageStruct(&reconnectStruct, sproxySocket);
-            lostHeartbeats = 0;
-        }
+        fprintf(stderr, "Arguments invalid. Terminating.\n");
+        return 1;
     }
 
-    portableClose(telnetAcceptorSocket);
-    portableClose(telnetSocket);
-    portableClose(sproxySocket);
-    portableCloseNetwork();
-    return 0;
-}
+    while(1)
+    {
+        //Create initial socket
+        if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+        {
+            perror("socket"); 
+            return 1;
+        }
+    
+        serverAddr.sin_family = AF_INET;
+        serverAddr.sin_addr.s_addr = inet_addr(argv[2]);
+        serverAddr.sin_port = htons(atoi(argv[3]));
+
+        //Bind IP to socket
+        if(inet_pton(AF_INET, argv[2], &serverAddr.sin_addr) <=0 )  
+        { 
+            perror("inet_pton"); 
+            return 1;
+        }
+    
+        //Connect to server
+        if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
+        { 
+            perror("connect");
+            return 1; 
+        }
+
+        //Create socket file descriptor
+        if ((telnetSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+        { 
+            perror("socket");
+            return 1;
+        } 
+        
+
+        telnetAddr.sin_family = AF_INET; 
+        telnetAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+        telnetAddr.sin_port = htons(atoi(argv[1]));
+        
+        //Bind ip to socket
+        if(bind(telnetSock, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) 
+        {
+            perror("bind");
+            return 1;
+        }
+
+        //Enable listening on given socket
+        if (listen(telnetSock, 1) < 0) 
+        { 
+            perror("listen"); 
+            exit(EXIT_FAILURE); 
+        }
+
+        //Accept the client
+        if ((telnetAccept = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
+        { 
+            perror("accept");
+            return 1;
+        }
+
+        //While user is still inputting data
+        while(1) {
+            //Clear the set
+            int n = 0;
+            FD_ZERO(&readfds);
+
+            //Add descriptors
+            FD_SET(telnetAccept, &readfds);
+            FD_SET(serverSock, &readfds);
+
+            //Find larger file descriptor
+            if (telnetAccept > serverSock) {
+                n = telnetAccept + 1;
+            } else {
+                n = serverSock + 1;
+            }
+
+            //Select returns one of the sockets or timeout
+            int rv = select(n, &readfds, NULL, NULL, NULL);
+
+            if (rv == -1) {
+                perror("select");
+                close(telnetSock);
+                close(serverSock);
+                return 1;
+            } else if (rv == 0) {
+                printf("Timeout occurred! No data after 10.5 seconds.");
+                close(telnetSock);
+                close(serverSock);
+                return 1;
+            } else {
+                //One or both descrptors have data
+                if (FD_ISSET(telnetAccept, &readfds)) {
+                    int valRead = recv(telnetAccept, telnetBuff, maxLen, 0);
+                    if (valRead <= 0) {
+                        getpeername(telnetAccept, (struct sockaddr *) &telnetAddr, (socklen_t * ) & telnetAddrLen);
+                        printf("Host disconnected , ip %s , port %d \n",
+                            inet_ntoa(telnetAddr.sin_addr), ntohs(telnetAddr.sin_port));
+                        close(telnetSock);
+                        close(serverSock);
+                        break;
+                    }
+                    telnetBuff[valRead] = '\0';
+                    
+                    send(serverSock, telnetBuff, valRead, 0);
+
+                    if(strcmp(telnetBuff, "exit") == 0 || strcmp(telnetBuff, "logout") == 0){
+                        close(telnetSock);
+                        close(serverSock);
+                        break;
+                    }
+                }
+                if (FD_ISSET(serverSock, &readfds)) {
+                    int valRead = recv(serverSock, serverBuff, maxLen, 0);
+                    if (valRead <= 0) {
+                        int serverAddrLen = sizeof(serverAddr);
+                        getpeername(serverSock, (struct sockaddr *) &serverAddr, (socklen_t * ) & serverAddrLen);
+                        printf("Host disconnected , ip %s , port %d \n",
+                            inet_ntoa(serverAddr.sin_addr), ntohs(serverAddr.sin_port));
+                        close(telnetSock);
+                        close(serverSock);
+                        break;
+                    }
+                    serverBuff[valRead] = '\0';
+                    send(telnetAccept, serverBuff, valRead, 0);
+                }
+            }
+
+            //Sanitize buffers
+            int i;
+            for (i = 0; i < 1025; i++) {
+                telnetBuff[i] = '\0';
+                serverBuff[i] = '\0';
+            }
+        }
+    }
+} 
