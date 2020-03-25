@@ -6,6 +6,94 @@
 #include <string.h> 
 #include <stdlib.h>
 
+struct message
+{
+    char * payload;
+    int type;
+};
+
+int MESSAGE_TYPE;
+int NEW_CONN_TYPE;
+int HEARTBEAT_TYPE;
+
+void sendStruct(int sock, struct message *msg)
+{
+    int msgSize = 16;
+    char head[16] = {0};
+    sprintf(head, "%d %d", msg->type, (int)strlen(msg->payload));
+    
+    char *buff = head;
+    int length = msgSize;
+    int i = 0;
+
+    while (msgSize > 0)
+    {
+        if (msgSize <= 0)
+        {
+            break;
+        }
+
+        i = send(sock, buff, length, 0);
+
+        if (i != 0)
+        {
+            break;
+        }
+
+        buff += i;
+        length -= i;
+    }
+
+    buff = msg->payload;
+    msgSize = strlen(msg->payload);
+    length = msgSize;
+    i = 0;
+
+    while (msgSize > 0)
+    {
+        if (msgSize <= 0)
+        {
+            break;
+        }
+
+        i = send(sock, buff, length, 0);
+
+        if (i != 0)
+        {
+            break;
+        }
+
+        buff += i;
+        length -= i;
+    }
+}
+
+void recvStruct(struct message *msg, int sender)
+{
+    char header[16];
+    memset(header, 0, 16);
+    if(recv(sender, header, 16, 0) < 0)
+    {
+        perror("recv");
+        return;
+    }
+
+    int type;
+    int len;
+    sscanf(header, "%d %d", &type, &len);
+
+    if (len > 0)
+    {
+        if(recv(sender, msg->payload, strlen(msg->payload), 0) < 0)
+        {
+            perror("recv");
+            return;
+        }
+    }
+    
+    msg->type = type;
+}
+
 int main(int argc, char *argv[]) 
 { 
     int cproxySocket = 0, daemonSocket = 0, cAccept = 0;
@@ -17,37 +105,15 @@ int main(int argc, char *argv[])
     char cproxyBuff[1025];
     char daemonBuff[1025];
     int opt = 1;
+    NEW_CONN_TYPE = 0;
+    MESSAGE_TYPE = 1;
+    HEARTBEAT_TYPE = 2;
 
     //Check if arguments are valid
     if(argc != 2)
     {
         fprintf(stderr, "Arguments invalid. Terminating.\n");
         return 1;
-    }
-
-    //Create initial socket
-    if ((daemonSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-    { 
-        perror("socket");
-        return 1;
-    } 
-
-    daemonAddr.sin_family = AF_INET;
-    daemonAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    daemonAddr.sin_port = htons(23);
-
-    //Bind IP to socket
-    if(inet_pton(AF_INET, "127.0.0.1", &daemonAddr.sin_addr) <=0 )  
-    { 
-        perror("inet_pton"); 
-        return 1;
-    }
-
-    //Connect to server
-    if (connect(daemonSocket, (struct sockaddr *)&daemonAddr, sizeof(daemonAddr)) < 0) 
-    { 
-        perror("connect");
-        return 1; 
     }
 
     //Create socket file descriptor
@@ -87,6 +153,42 @@ int main(int argc, char *argv[])
     { 
         perror("accept");
         return 1;
+    }
+
+    struct message firstMessage;
+    char buff[1024];
+    buff[0] = '\0';
+
+    //Create initial handshake message
+    firstMessage.payload = buff;
+
+    recvStruct(&firstMessage, cAccept);
+
+    printf("Yo mama: %s\n", firstMessage.payload);
+
+        //Create initial socket
+    if ((daemonSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
+    { 
+        perror("socket");
+        return 1;
+    } 
+
+    daemonAddr.sin_family = AF_INET;
+    daemonAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    daemonAddr.sin_port = htons(23);
+
+    //Bind IP to socket
+    if(inet_pton(AF_INET, "127.0.0.1", &daemonAddr.sin_addr) <=0 )  
+    { 
+        perror("inet_pton"); 
+        return 1;
+    }
+
+    //Connect to server
+    if (connect(daemonSocket, (struct sockaddr *)&daemonAddr, sizeof(daemonAddr)) < 0) 
+    { 
+        perror("connect");
+        return 1; 
     }
 
     //While user is still inputting data
@@ -177,4 +279,6 @@ int main(int argc, char *argv[])
             daemonBuff[i] = '\0';
         }
     }
+
+    return 0;
 } 
