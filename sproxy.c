@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
     { 
         perror("socket");
         return 1;
-    } 
+    }
 
     daemonAddr.sin_family = AF_INET;
     daemonAddr.sin_addr.s_addr = inet_addr("127.0.0.1");

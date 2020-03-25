@@ -154,8 +154,11 @@ int main(int argc, char *argv[])
     newMessage.payload = buff;
     newMessage.type = NEW_CONN_TYPE;
 
+    sendStruct(serverSock, &newMessage);
+
     //While user is still inputting data
-    while(1) {
+    while(1)
+    {
         //Clear the set
         int n = 0;
         FD_ZERO(&readfds);
