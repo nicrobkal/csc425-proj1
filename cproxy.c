@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
     serverAddr.sin_port = htons(atoi(argv[3]));
 
     //Bind IP to socket
-    if(inet_pton(AF_INET, argv[2], &serverAddr.sin_addr) <=0 )  
+    if(inet_pton(AF_INET, argv[2], &serverAddr.sin_addr) < 0)  
     { 
         perror("inet_pton"); 
         return 1;
