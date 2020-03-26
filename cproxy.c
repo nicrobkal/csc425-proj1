@@ -212,9 +212,14 @@ int main(int argc, char *argv[])
         FD_CLR(serverSock, &readfds);
         FD_CLR(telnetAccept, &readfds);
         FD_ZERO(&readfds);
-        FD_SET(serverSock, &readfds);
         FD_SET(telnetSock, &readfds);
+        FD_SET(serverSock, &readfds);
         FD_SET(telnetAccept, &readfds);
+
+        if(FD_ISSET(telnetAccept, &readfds))
+        {
+            printf("Shiz\n");
+        }
 
         //Set new timeval
         struct timeval tv1 = {1, 0};
@@ -233,7 +238,7 @@ int main(int argc, char *argv[])
             tv = tv1;
             lostHeartbeats++;
         }
-        if (FD_ISSET(telnetAccept, &readfds)) 
+        if (FD_ISSET(telnetAccept, &readfds))
         {
             int valRead = recv(telnetAccept, msg, maxLen, 0);
             struct message newMsg;
