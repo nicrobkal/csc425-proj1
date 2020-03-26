@@ -84,6 +84,8 @@ int recvStruct(struct message *msg, int sender)
     int len;
     sscanf(header, "%d %d", &type, &len);
 
+    printf("Type: %d, Len: %d\n", type, len);
+
     if (len > 0)
     {
         if(recv(sender, msg->payload, strlen(msg->payload), 0) < 0)
