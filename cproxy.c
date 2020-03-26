@@ -20,8 +20,8 @@ int lostHeartbeats;
 
 void sendStruct(int sock, struct message *msg)
 {
-    int msgSize = 16;
-    char head[16] = {0};
+    int msgSize = 10;
+    char head[10] = {0};
     sprintf(head, "%d %d", msg->type, (int)strlen(msg->payload));
     
     char *buff = head;
@@ -72,9 +72,9 @@ void sendStruct(int sock, struct message *msg)
 
 int recvStruct(struct message *msg, int sender)
 {
-    char header[16];
-    memset(header, 0, 16);
-    if(recv(sender, header, 16, 0) < 0)
+    char header[10];
+    memset(header, 0, 10);
+    if(recv(sender, header, 10, 0) < 0)
     {
         perror("recv");
         return -1;
