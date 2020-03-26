@@ -272,7 +272,7 @@ int main(int argc, char *argv[])
                         break;
                     }
 
-                    i = send(cAccept, buff, length, 0);
+                    i = send(daemonSocket, buff, length, 0);
 
                     if (i != 0)
                     {
@@ -296,7 +296,7 @@ int main(int argc, char *argv[])
             }
             else if (messStruct.type == NEW_CONN_TYPE)
             {
-                close(cAccept);
+                close(daemonSocket);
 
                 //Recreate socket
                 int daemonSocket = socket(PF_INET, SOCK_STREAM, 0);
