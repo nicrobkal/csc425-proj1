@@ -70,14 +70,14 @@ void sendStruct(int sock, struct message *msg)
     }
 }
 
-void recvStruct(struct message *msg, int sender)
+int recvStruct(struct message *msg, int sender)
 {
     char header[16];
     memset(header, 0, 16);
     if(recv(sender, header, 16, 0) < 0)
     {
         perror("recv");
-        return;
+        return -1;
     }
 
     int type;
@@ -89,11 +89,13 @@ void recvStruct(struct message *msg, int sender)
         if(recv(sender, msg->payload, strlen(msg->payload), 0) < 0)
         {
             perror("recv");
-            return;
+            return -1;
         }
     }
     
     msg->type = type;
+
+    return strlen(msg->payload);
 }
 
 int main(int argc, char *argv[]) 
