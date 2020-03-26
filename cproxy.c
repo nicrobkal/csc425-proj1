@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
     //Create initial socket
     if ((serverSock = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
     {
-        perror("socket"); 
+        perror("socket");
         return 1;
     }
 
@@ -303,6 +303,7 @@ int main(int argc, char *argv[])
             buff[0] = '\0';
             reconnectStruct.payload = buff;
             reconnectStruct.type = NEW_CONN_TYPE;
+            printf("New Connection made.\n");
             sendStruct(serverSock, &reconnectStruct);
             int socketList[] = {serverSock, telnetAccept, telnetSock};
             int max = -1;
