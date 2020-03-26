@@ -15,6 +15,8 @@ struct message
 int MESSAGE_TYPE;
 int NEW_CONN_TYPE;
 int HEARTBEAT_TYPE;
+int RECONNECT_TYPE;
+int lostHeartbeats;
 
 void sendStruct(int sock, struct message *msg)
 {
@@ -68,6 +70,32 @@ void sendStruct(int sock, struct message *msg)
     }
 }
 
+void recvStruct(struct message *msg, int sender)
+{
+    char header[16];
+    memset(header, 0, 16);
+    if(recv(sender, header, 16, 0) < 0)
+    {
+        perror("recv");
+        return;
+    }
+
+    int type;
+    int len;
+    sscanf(header, "%d %d", &type, &len);
+
+    if (len > 0)
+    {
+        if(recv(sender, msg->payload, strlen(msg->payload), 0) < 0)
+        {
+            perror("recv");
+            return;
+        }
+    }
+    
+    msg->type = type;
+}
+
 int main(int argc, char *argv[]) 
 { 
     int serverSock = 0, telnetSock = 0, telnetAccept = 0;
@@ -76,11 +104,11 @@ int main(int argc, char *argv[])
     int telnetAddrLen = sizeof(telnetAddr);
     struct sockaddr_in serverAddr;
     fd_set readfds;
-    char telnetBuff[1025] = {0};
-    char serverBuff[1025] = {0};
     NEW_CONN_TYPE = 0;
     MESSAGE_TYPE = 1;
     HEARTBEAT_TYPE = 2;
+    RECONNECT_TYPE = 3;
+    lostHeartbeats = 0;
 
     //Check if arguments are valid
     if(argc != 4)
@@ -156,82 +184,157 @@ int main(int argc, char *argv[])
 
     sendStruct(serverSock, &newMessage);
 
+    int socketList[] = {serverSock, telnetSock, telnetAccept};
+
+    int max = -1;
+    int i;
+    for (i = 0; i < 3; i++)
+    {
+        if (socketList[i] > max)
+        {
+            max = socketList[i];
+        }
+    }
+    int n = max + 1;
+
+    char msg[1024] = {0};
+    struct timeval tv = {1, 0};
+
     //While user is still inputting data
     while(1)
     {
-        //Clear the set
-        int n = 0;
+        //Reset the socket descriptors
+        FD_CLR(telnetSock, &readfds);
+        FD_CLR(serverSock, &readfds);
+        FD_CLR(telnetAccept, &readfds);
         FD_ZERO(&readfds);
-
-        //Add descriptors
-        FD_SET(telnetAccept, &readfds);
         FD_SET(serverSock, &readfds);
+        FD_SET(telnetSock, &readfds);
+        FD_SET(telnetAccept, &readfds);
 
-        //Find larger file descriptor
-        if (telnetAccept > serverSock) {
-            n = telnetAccept + 1;
-        } else {
-            n = serverSock + 1;
-        }
+        //Set new timeval
+        struct timeval tv1 = {1, 0};
 
         //Select returns one of the sockets or timeout
-        int rv = select(n, &readfds, NULL, NULL, NULL);
+        int rv = select(n, &readfds, NULL, NULL, &tv);
 
-        if (rv == -1) {
-            perror("select");
-            close(telnetSock);
-            close(serverSock);
-            return 1;
-        } else if (rv == 0) {
-            printf("Timeout occurred! No data after 10.5 seconds.");
-            close(telnetSock);
-            close(serverSock);
-            return 1;
-        } else {
-            //One or both descrptors have data
-            if (FD_ISSET(telnetAccept, &readfds)) {
-                int valRead = recv(telnetAccept, telnetBuff, maxLen, 0);
-                if (valRead <= 0) {
-                    getpeername(telnetAccept, (struct sockaddr *) &telnetAddr, (socklen_t * ) & telnetAddrLen);
-                    printf("Host disconnected , ip %s , port %d \n",
-                        inet_ntoa(telnetAddr.sin_addr), ntohs(telnetAddr.sin_port));
-                    close(telnetSock);
-                    close(serverSock);
-                    break;
-                }
-                telnetBuff[valRead] = '\0';
-                
-                send(serverSock, telnetBuff, valRead, 0);
-
-                if(strcmp(telnetBuff, "exit") == 0 || strcmp(telnetBuff, "logout") == 0){
-                    close(telnetSock);
-                    close(serverSock);
-                    break;
-                }
-            }
-            if (FD_ISSET(serverSock, &readfds)) {
-                int valRead = recv(serverSock, serverBuff, maxLen, 0);
-                if (valRead <= 0) {
-                    int serverAddrLen = sizeof(serverAddr);
-                    getpeername(serverSock, (struct sockaddr *) &serverAddr, (socklen_t * ) & serverAddrLen);
-                    printf("Host disconnected , ip %s , port %d \n",
-                        inet_ntoa(serverAddr.sin_addr), ntohs(serverAddr.sin_port));
-                    close(telnetSock);
-                    close(serverSock);
-                    break;
-                }
-                serverBuff[valRead] = '\0';
-                send(telnetAccept, serverBuff, valRead, 0);
+        if (rv == 0) 
+        {
+            struct message newMsg;
+            char buff[0];
+            buff[0] = '\0';
+            newMsg.payload = buff;
+            newMsg.type = HEARTBEAT_TYPE;
+            sendStruct(serverSock, &newMsg);
+            tv = tv1;
+            lostHeartbeats++;
+        }
+        if (FD_ISSET(telnetAccept, &readfds)) 
+        {
+            int valRead = recv(telnetAccept, msg, maxLen, 0);
+            struct message newMsg;
+            char buff[0];
+            buff[0] = '\0';
+            newMsg.payload = buff;
+            newMsg.type = MESSAGE_TYPE;
+            sendStruct(serverSock, &newMsg);
+            if (valRead <= 0)
+            {
+                break;
             }
         }
+        if (FD_ISSET(serverSock, &readfds)) 
+        {
+            struct message messStruct;
+            char newMsg[1024];
+            messStruct.payload = newMsg;
+            recvStruct(&messStruct, serverSock);
+            if(messStruct.type == MESSAGE_TYPE)
+            {
+                char *buff = newMsg;
+                int msgSize = strlen(newMsg);
+                int length = msgSize;
+                int i = 0;
+                while (msgSize > 0)
+                {
+                    if (msgSize <= 0)
+                    {
+                        break;
+                    }
 
-        //Sanitize buffers
-        int i;
-        for (i = 0; i < 1025; i++) {
-            telnetBuff[i] = '\0';
-            serverBuff[i] = '\0';
+                    i = send(telnetAccept, buff, length, 0);
+
+                    if (i != 0)
+                    {
+                        break;
+                    }
+                    buff += i;
+                    length -= i;
+                }
+                memset(messStruct.payload, 0, strlen(messStruct.payload));
+            }
+            else if (messStruct.type == HEARTBEAT_TYPE)
+            {
+                lostHeartbeats = 0;
+            }
+            if(strlen(messStruct.payload) <= 0)
+            {
+                break;
+            }
+        }
+        if (FD_ISSET(telnetSock, &readfds))
+        {
+            close(telnetAccept);
+            if ((telnetAccept = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
+            {
+                perror("accept");
+                return 1;
+            }
+            struct message reconnectStruct;
+            char buff[0];
+            buff[0] = '\0';
+            reconnectStruct.payload = buff;
+            reconnectStruct.type = NEW_CONN_TYPE;
+            sendStruct(serverSock, &reconnectStruct);
+            int socketList[] = {serverSock, telnetAccept, telnetSock};
+            int max = -1;
+            int i;
+            for (i = 0; i < 3; i++)
+            {
+                if (socketList[i] > max)
+                {
+                    max = socketList[i];
+                }
+            }
+            n = max + 1;
+        }
+        if (lostHeartbeats > 3)
+        {
+            close(serverSock);
+            
+            //Recreate socket
+            int serverSock = socket(PF_INET, SOCK_STREAM, 0);
+
+            //Reconnect to server
+            if (connect(serverSock, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) 
+            { 
+                perror("connect");
+                return 1; 
+            }
+
+            struct message reconnectStruct;
+            char buff[0];
+            buff[0] = '\0';
+            reconnectStruct.payload = buff;
+            reconnectStruct.type = RECONNECT_TYPE;
+            sendStruct(serverSock, &reconnectStruct);
+            lostHeartbeats = 0;
         }
     }
+
+    close(serverSock);
+    close(telnetSock);
+    close(telnetAccept);
 
     return 0;
 }

@@ -15,6 +15,7 @@ struct message
 int MESSAGE_TYPE;
 int NEW_CONN_TYPE;
 int HEARTBEAT_TYPE;
+int lostHeartbeats;
 
 void sendStruct(int sock, struct message *msg)
 {
@@ -68,14 +69,14 @@ void sendStruct(int sock, struct message *msg)
     }
 }
 
-void recvStruct(struct message *msg, int sender)
+int recvStruct(struct message *msg, int sender)
 {
     char header[16];
     memset(header, 0, 16);
     if(recv(sender, header, 16, 0) < 0)
     {
         perror("recv");
-        return;
+        return -1;
     }
 
     int type;
@@ -87,27 +88,28 @@ void recvStruct(struct message *msg, int sender)
         if(recv(sender, msg->payload, strlen(msg->payload), 0) < 0)
         {
             perror("recv");
-            return;
+            return -1;
         }
     }
     
     msg->type = type;
+
+    return len;
 }
 
 int main(int argc, char *argv[]) 
 { 
     int cproxySocket = 0, daemonSocket = 0, cAccept = 0;
-    int maxLen = 1025;
     struct sockaddr_in cproxyAddr = {0};
     int telnetAddrLen = sizeof(cproxyAddr);
     struct sockaddr_in daemonAddr = {0};
     fd_set readfds;
-    char cproxyBuff[1025];
-    char daemonBuff[1025];
     int opt = 1;
+    int isClientConnected = 0;
     NEW_CONN_TYPE = 0;
     MESSAGE_TYPE = 1;
     HEARTBEAT_TYPE = 2;
+    lostHeartbeats = 0;
 
     //Check if arguments are valid
     if(argc != 2)
@@ -155,6 +157,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    isClientConnected = 1;
+
     struct message firstMessage;
     char buff[1024];
     buff[0] = '\0';
@@ -164,11 +168,9 @@ int main(int argc, char *argv[])
 
     recvStruct(&firstMessage, cAccept);
 
-    printf("Yo mama: %s\n", firstMessage.payload);
-
-        //Create initial socket
+    //Create initial socket
     if ((daemonSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
-    { 
+    {
         perror("socket");
         return 1;
     }
@@ -191,94 +193,210 @@ int main(int argc, char *argv[])
         return 1; 
     }
 
+    int socketList[] = {daemonSocket, cproxySocket, cAccept};
+
+    //Calculate n for select
+    int max = -1;
+    int i;
+    for (i = 0; i < 3; i++)
+    {
+        if (socketList[i] > max)
+        {
+            max = socketList[i];
+        }
+    }
+    int n = max + 1;
+
+    char msg[1024] = {0};
+    struct timeval tv = {3, 0};
+
     //While user is still inputting data
     while(1)
     {
-        //Clear the set
-        int n = 0;
+        //Reset the sockets
+        FD_CLR(daemonSocket, &readfds);
+        FD_CLR(cproxySocket, &readfds);
+        FD_CLR(cAccept, &readfds);
         FD_ZERO(&readfds);
-
-        //Add descriptors
-        FD_SET(cAccept, &readfds);
         FD_SET(daemonSocket, &readfds);
+        FD_SET(cproxySocket, &readfds);
+        FD_SET(cAccept, &readfds);
 
-        //Find larger file descriptor
-        if(cAccept > daemonSocket)
-        {
-            n = cAccept + 1;
-        }
-        else
-        {
-            n = daemonSocket + 1;
-        }
+        //Set new timevals
+        struct timeval tv1 = {3, 0};
+        struct timeval tv2 = {30, 0};
 
         //Select returns one of the sockets or timeout
-        int rv = select(n, &readfds, NULL, NULL, NULL);
+        int rv = select(n, &readfds, NULL, NULL, &tv);
 
-
-        if (rv == -1)
+        if(FD_ISSET(daemonSocket, &readfds))
         {
-            perror("select");
-            close(cproxySocket);
-            close(daemonSocket);
-            return 1;
-        }
-        else if(rv == 0)
-        {
-            printf("Timeout occurred! No data after 10.5 seconds.\n");
-            close(cproxySocket);
-            close(daemonSocket);
-            return 1;
-        }
-        else
-        {
-            //One or both descrptors have data
-            if(FD_ISSET(cAccept, &readfds))
+            int valRead = recv(daemonSocket, msg, 1024, 0);
+            if(isClientConnected == 1)
             {
-                int valRead = recv(cAccept, cproxyBuff, maxLen, 0);
-                if(valRead <= 0)
-                {
-                    getpeername(cAccept, (struct sockaddr*)&cproxyAddr , (socklen_t*)&telnetAddrLen); 
-                    printf("Host disconnected , ip %s , port %d \n" ,  
-                        inet_ntoa(cproxyAddr.sin_addr) , ntohs(cproxyAddr.sin_port));
-                    close(cproxySocket);
-                    close(daemonSocket); 
-                    break; 
-                }
-
-                if(strcmp(cproxyBuff, "exit") == 0 || strcmp(cproxyBuff, "logout") == 0){
-                    close(cproxySocket);
-                    close(daemonSocket);
-                    break;
-                }
-                send(daemonSocket, cproxyBuff, valRead, 0);
+                struct message newMsg;
+                char buff[0];
+                buff[0] = '\0';
+                newMsg.payload = buff;
+                newMsg.type = MESSAGE_TYPE;
+                sendStruct(cAccept, &newMsg);
             }
-            if(FD_ISSET(daemonSocket, &readfds))
+            
+            if (valRead <= 0) 
             {
-                int valRead = recv(daemonSocket, daemonBuff, maxLen, 0);
-                if(valRead <= 0)
+                break;
+            }
+        }
+        if(isClientConnected == 1 && FD_ISSET(cAccept, &readfds))
+        {
+            struct message messStruct;
+            char newMsg[1024];
+            messStruct.payload = newMsg;
+            recvStruct(&messStruct, cAccept);
+
+            if(messStruct.type == MESSAGE_TYPE)
+            {
+                char *buff = messStruct.payload;
+                int msgSize = strlen(messStruct.payload);
+                int length = msgSize;
+                int i;
+
+                while (msgSize > 0)
                 {
-                    int serverAddrLen = sizeof(daemonAddr);
-                    getpeername(daemonSocket, (struct sockaddr*)&daemonAddr , (socklen_t*)&serverAddrLen); 
-                    printf("Host disconnected , ip %s , port %d \n" ,  
-                        inet_ntoa(daemonAddr.sin_addr) , ntohs(daemonAddr.sin_port));
-                        close(daemonSocket);
-                        close(cproxySocket);
+                    if (msgSize <= 0)
+                    {
                         break;
+                    }
+
+                    i = send(cAccept, buff, length, 0);
+
+                    if (i != 0)
+                    {
+                        break;
+                    }
+
+                    buff += i;
+                    length -= i;
                 }
-                send(cAccept, daemonBuff, valRead, 0);
-
+                memset(buff, 0, strlen(buff));
             }
-        }
+            else if (messStruct.type == HEARTBEAT_TYPE)
+            {
+                struct message msgStruct;
+                char buff[0];
+                buff[0] = '\0';
+                msgStruct.payload = buff;
+                msgStruct.type = HEARTBEAT_TYPE;
+                sendStruct(cAccept, &msgStruct);
+            }
+            else if (messStruct.type == NEW_CONN_TYPE)
+            {
+                close(cAccept);
 
-        //Sanitize buffers
-        int i;
-        for(i = 0; i < 1025; i++)
+                //Recreate socket
+                int daemonSocket = socket(PF_INET, SOCK_STREAM, 0);
+
+                int socketList[] = {daemonSocket, cAccept, cproxySocket};
+                int max = -1;
+                int i = 0;
+                for (i = 0; i < 3; i++)
+                {
+                    if (socketList[i] > max)
+                    {
+                        max = socketList[i];
+                    }
+                }
+                n = max + 1;
+            }
+
+            if(strlen(messStruct.payload) <= 0)
+            {
+                break;
+            }
+
+            tv = tv1;
+        }
+        if(FD_ISSET(cproxySocket, &readfds))
         {
-            cproxyBuff[i] = '\0';
-            daemonBuff[i] = '\0';
+            //Accept the client
+            if ((cAccept = accept(cproxySocket, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen))<0) 
+            { 
+                perror("accept");
+                return 1;
+            }
+            isClientConnected = 1;
+
+            int socketList[] = {daemonSocket, cAccept, cproxySocket};
+            int max = -1;
+            int i = 0;
+            for (i = 0; i < 3; i++)
+            {
+                if (socketList[i] > max)
+                {
+                    max = socketList[i];
+                }
+            }
+            n = max + 1;
+
+            struct message messStruct;
+            char newMsg[1024];
+            messStruct.payload = newMsg;
+            recvStruct(&messStruct, cAccept);
+
+            if(messStruct.type == NEW_CONN_TYPE)
+            {
+                close(cAccept);
+
+                //Reconnect telnet
+                daemonSocket = socket(PF_INET, SOCK_STREAM, 0);
+
+                //Connect to server
+                if (connect(daemonSocket, (struct sockaddr *)&daemonAddr, sizeof(daemonAddr)) < 0) 
+                {
+                    perror("connect");
+                    return 1;
+                }
+
+                int newSocketList[] = {cAccept, cproxySocket};
+                max = -1;
+                for (i = 0; i < 2; i++)
+                {
+                    if (newSocketList[i] > max)
+                    {
+                        max = newSocketList[i];
+                    }
+                }
+                n = max + 1;
+            }
+            
+        }
+        if(rv == 0 && isClientConnected == 0)
+        {
+            break;
+        }
+        if(rv == 0 && isClientConnected == 1)
+        {
+            close(cproxySocket);
+            isClientConnected = 0;
+            int socketList[] = {daemonSocket, cproxySocket, cAccept};
+            int max = -1;
+            int i;
+            for (i = 0; i < 3; i++)
+            {
+                if (socketList[i] > max)
+                {
+                    max = socketList[i];
+                }
+            }
+            n = max + 1;
+
+            tv = tv2;
         }
     }
+
+    close(daemonSocket);
+    close(cproxySocket);
+    close(cAccept);
 
     return 0;
 } 
