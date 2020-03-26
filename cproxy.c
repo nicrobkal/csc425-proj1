@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 
         if(FD_ISSET(telnetAccept, &readfds))
         {
-            printf("Shiz\n");
+            printf("Shiz, n = %d\n", n);
         }
 
         //Set new timeval
