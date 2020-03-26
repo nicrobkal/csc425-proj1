@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
             struct message messStruct;
             char newMsg[1024];
             messStruct.payload = newMsg;
-            recvStruct(&messStruct, serverSock);
+            int retVal = recvStruct(&messStruct, serverSock);
             if(messStruct.type == MESSAGE_TYPE)
             {
                 char *buff = newMsg;
@@ -280,7 +280,7 @@ int main(int argc, char *argv[])
             {
                 lostHeartbeats = 0;
             }
-            if(strlen(messStruct.payload) <= 0)
+            if(retVal <= 0)
             {
                 printf("Mehh3");
                 break;
