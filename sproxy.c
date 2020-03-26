@@ -266,6 +266,7 @@ int main(int argc, char *argv[])
                 {
                     if (msgSize <= 0)
                     {
+                        printf("Yolo1");
                         break;
                     }
 
@@ -273,6 +274,7 @@ int main(int argc, char *argv[])
 
                     if (i != 0)
                     {
+                        printf("Yolo2");
                         break;
                     }
 
@@ -312,6 +314,7 @@ int main(int argc, char *argv[])
 
             if(strlen(messStruct.payload) <= 0)
             {
+                printf("Yolo3");
                 break;
             }
 
@@ -373,6 +376,7 @@ int main(int argc, char *argv[])
         }
         if(rv == 0 && isClientConnected == 0)
         {
+            printf("Yolo4");
             break;
         }
         if(rv == 0 && isClientConnected == 1)
@@ -400,4 +404,4 @@ int main(int argc, char *argv[])
     close(cAccept);
 
     return 0;
-} 
+}

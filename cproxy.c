@@ -240,6 +240,7 @@ int main(int argc, char *argv[])
             sendStruct(serverSock, &newMsg);
             if (valRead <= 0)
             {
+                printf("Mehh");
                 break;
             }
         }
@@ -259,6 +260,7 @@ int main(int argc, char *argv[])
                 {
                     if (msgSize <= 0)
                     {
+                        printf("Mehh1");
                         break;
                     }
 
@@ -266,6 +268,7 @@ int main(int argc, char *argv[])
 
                     if (i != 0)
                     {
+                        printf("Mehh2");
                         break;
                     }
                     buff += i;
@@ -279,6 +282,7 @@ int main(int argc, char *argv[])
             }
             if(strlen(messStruct.payload) <= 0)
             {
+                printf("Mehh3");
                 break;
             }
         }
