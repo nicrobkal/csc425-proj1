@@ -210,6 +210,8 @@ int main(int argc, char *argv[])
     char msg[1024] = {0};
     struct timeval tv = {3, 0};
 
+    printf("Before while");
+
     //While user is still inputting data
     while(1)
     {
