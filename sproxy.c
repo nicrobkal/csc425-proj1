@@ -85,7 +85,7 @@ int recvStruct(struct message *msg, int sender)
 
     if (len > 0)
     {
-        if(recv(sender, msg->payload, strlen(msg->payload), 0) < 0)
+        if(recv(sender, msg->payload, len, 0) < 0)
         {
             perror("recv");
             return -1;
@@ -94,7 +94,7 @@ int recvStruct(struct message *msg, int sender)
     
     msg->type = type;
 
-    return len;
+    return strlen(msg->payload);
 }
 
 int main(int argc, char *argv[]) 
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
             struct message messStruct;
             char newMsg[1024];
             messStruct.payload = newMsg;
-            recvStruct(&messStruct, cAccept);
+            int retVal = recvStruct(&messStruct, cAccept);
 
             if(messStruct.type == MESSAGE_TYPE)
             {
@@ -312,7 +312,7 @@ int main(int argc, char *argv[])
                 n = max + 1;
             }
 
-            if(strlen(messStruct.payload) <= 0)
+            if(retVal <= 0)
             {
                 printf("Yolo3");
                 break;
