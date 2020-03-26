@@ -12,8 +12,8 @@ struct message
     int type;
 };
 
-int MESSAGE_TYPE;
 int NEW_CONN_TYPE;
+int MESSAGE_TYPE;
 int HEARTBEAT_TYPE;
 int RECONNECT_TYPE;
 int lostHeartbeats;
