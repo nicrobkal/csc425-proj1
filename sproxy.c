@@ -314,7 +314,7 @@ int main(int argc, char *argv[])
 
             if(retVal <= 0)
             {
-                printf("Yolo3");
+                printf("Yolo3: %d\n", retVal);
                 break;
             }
 

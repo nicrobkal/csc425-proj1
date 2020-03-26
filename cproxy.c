@@ -284,7 +284,7 @@ int main(int argc, char *argv[])
             }
             if(retVal <= 0)
             {
-                printf("Mehh3");
+                printf("Mehh3: %d\n", retVal);
                 break;
             }
         }
