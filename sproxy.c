@@ -85,7 +85,7 @@ int recvStruct(struct message *msg, int sender)
 
     printf("Type: %d, Len: %d\n", type, len);
 
-    if (len > 0)
+    if(len > 0)
     {
         if(recv(sender, msg->payload, len, 0) < 0)
         {
@@ -121,14 +121,14 @@ int main(int argc, char *argv[])
     }
 
     //Create socket file descriptor
-    if ((cproxySocket = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+    if ((cAccept = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
         perror("socket");
         return 1;
     } 
 
     //Attach socket to port
-    if (setsockopt(cproxySocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
+    if (setsockopt(cAccept, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) 
     { 
         perror("setsockopt");
         return 1;
@@ -139,21 +139,21 @@ int main(int argc, char *argv[])
     cproxyAddr.sin_port = htons(atoi(argv[1]));
     
     //Bind ip to socket
-    if(bind(cproxySocket, (struct sockaddr *)&cproxyAddr, sizeof(cproxyAddr)) < 0)
+    if(bind(cAccept, (struct sockaddr *)&cproxyAddr, sizeof(cproxyAddr)) < 0)
     {
         perror("bind");
         return 1;
     }
 
     //Enable listening on given socket
-    if (listen(cproxySocket, 1) < 0) 
+    if (listen(cAccept, 1) < 0) 
     { 
         perror("listen"); 
         exit(EXIT_FAILURE); 
     }
 
     //Accept the client
-    if ((cAccept = accept(cproxySocket, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen))<0) 
+    if ((cproxySocket = accept(cAccept, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen)) < 0) 
     { 
         perror("accept");
         return 1;
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
     //Create initial handshake message
     firstMessage.payload = buff;
 
-    recvStruct(&firstMessage, cAccept);
+    recvStruct(&firstMessage, cproxySocket);
 
     //Create initial socket
     if ((daemonSocket = socket(AF_INET, SOCK_STREAM, 0)) < 0) 
@@ -190,9 +190,9 @@ int main(int argc, char *argv[])
 
     //Connect to server
     if (connect(daemonSocket, (struct sockaddr *)&daemonAddr, sizeof(daemonAddr)) < 0) 
-    { 
+    {
         perror("connect");
-        return 1; 
+        return 1;
     }
 
     int socketList[] = {daemonSocket, cproxySocket, cAccept};
@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
                 buff[0] = '\0';
                 newMsg.payload = buff;
                 newMsg.type = MESSAGE_TYPE;
-                sendStruct(cAccept, &newMsg);
+                sendStruct(cproxySocket, &newMsg);
             }
             
             if (valRead <= 0) 
@@ -250,12 +250,12 @@ int main(int argc, char *argv[])
                 break;
             }
         }
-        if(isClientConnected == 1 && FD_ISSET(cAccept, &readfds))
+        if(isClientConnected == 1 && FD_ISSET(cproxySocket, &readfds))
         {
             struct message messStruct;
             char newMsg[1024];
             messStruct.payload = newMsg;
-            int retVal = recvStruct(&messStruct, cAccept);
+            int retVal = recvStruct(&messStruct, cproxySocket);
 
             if(messStruct.type == MESSAGE_TYPE)
             {
@@ -292,7 +292,7 @@ int main(int argc, char *argv[])
                 buff[0] = '\0';
                 msgStruct.payload = buff;
                 msgStruct.type = HEARTBEAT_TYPE;
-                sendStruct(cAccept, &msgStruct);
+                sendStruct(cproxySocket, &msgStruct);
             }
             else if (messStruct.type == NEW_CONN_TYPE)
             {
@@ -301,7 +301,7 @@ int main(int argc, char *argv[])
                 //Recreate socket
                 int daemonSocket = socket(PF_INET, SOCK_STREAM, 0);
 
-                int socketList[] = {daemonSocket, cAccept, cproxySocket};
+                int socketList[] = {daemonSocket, cproxySocket, cproxySocket};
                 int max = -1;
                 int i = 0;
                 for (i = 0; i < 3; i++)
@@ -322,11 +322,12 @@ int main(int argc, char *argv[])
 
             tv = tv1;
         }
-        if(FD_ISSET(cproxySocket, &readfds))
+        //3
+        if(FD_ISSET(cAccept, &readfds))
         {
             //Accept the client
-            if ((cAccept = accept(cproxySocket, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen))<0) 
-            { 
+            if ((cproxySocket = accept(cAccept, (struct sockaddr *)&cproxyAddr, (socklen_t*)&telnetAddrLen))<0) 
+            {
                 perror("accept");
                 return 1;
             }
@@ -347,11 +348,11 @@ int main(int argc, char *argv[])
             struct message messStruct;
             char newMsg[1024];
             messStruct.payload = newMsg;
-            recvStruct(&messStruct, cAccept);
+            recvStruct(&messStruct, cproxySocket);
 
             if(messStruct.type == NEW_CONN_TYPE)
             {
-                close(cAccept);
+                close(daemonSocket);
 
                 //Reconnect telnet
                 daemonSocket = socket(PF_INET, SOCK_STREAM, 0);

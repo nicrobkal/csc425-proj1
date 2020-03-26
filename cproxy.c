@@ -102,7 +102,7 @@ int recvStruct(struct message *msg, int sender)
 
 int main(int argc, char *argv[]) 
 { 
-    int serverSock = 0, telnetSock = 0, telnetAccept = 0;
+    int serverSock = 0, telnetAccept = 0, telnetSock = 0;
     int maxLen = 1025;
     struct sockaddr_in telnetAddr;
     int telnetAddrLen = sizeof(telnetAddr);
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
     }
 
     //Create socket file descriptor
-    if ((telnetSock = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
+    if ((telnetAccept = socket(AF_INET, SOCK_STREAM, 0)) == 0) 
     { 
         perror("socket");
         return 1;
@@ -158,21 +158,21 @@ int main(int argc, char *argv[])
     telnetAddr.sin_port = htons(atoi(argv[1]));
     
     //Bind ip to socket
-    if(bind(telnetSock, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) 
+    if(bind(telnetAccept, (struct sockaddr *)&telnetAddr, sizeof(telnetAddr)) < 0) 
     {
         perror("bind");
         return 1;
     }
 
     //Enable listening on given socket
-    if (listen(telnetSock, 1) < 0) 
+    if (listen(telnetAccept, 1) < 0) 
     { 
         perror("listen"); 
         exit(EXIT_FAILURE); 
     }
 
     //Accept the client
-    if ((telnetAccept = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
+    if ((telnetSock = accept(telnetAccept, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
     { 
         perror("accept");
         return 1;
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
 
     sendStruct(serverSock, &newMessage);
 
-    int socketList[] = {serverSock, telnetSock, telnetAccept};
+    int socketList[] = {serverSock, telnetAccept, telnetSock};
 
     int max = -1;
     int i;
@@ -201,6 +201,8 @@ int main(int argc, char *argv[])
     }
     int n = max + 1;
 
+    printf("Chum: %d, %d, %d, %d\n", serverSock, telnetAccept, telnetSock, n);
+
     char msg[1024] = {0};
     struct timeval tv = {1, 0};
 
@@ -208,15 +210,15 @@ int main(int argc, char *argv[])
     while(1)
     {
         //Reset the socket descriptors
-        FD_CLR(telnetSock, &readfds);
-        FD_CLR(serverSock, &readfds);
         FD_CLR(telnetAccept, &readfds);
+        FD_CLR(serverSock, &readfds);
+        FD_CLR(telnetSock, &readfds);
         FD_ZERO(&readfds);
-        FD_SET(telnetSock, &readfds);
-        FD_SET(serverSock, &readfds);
         FD_SET(telnetAccept, &readfds);
+        FD_SET(serverSock, &readfds);
+        FD_SET(telnetSock, &readfds);
 
-        if(FD_ISSET(telnetAccept, &readfds))
+        if(FD_ISSET(telnetSock, &readfds))
         {
             printf("Shiz, n = %d\n", n);
         }
@@ -238,9 +240,9 @@ int main(int argc, char *argv[])
             tv = tv1;
             lostHeartbeats++;
         }
-        if (FD_ISSET(telnetAccept, &readfds))
+        if (FD_ISSET(telnetSock, &readfds))
         {
-            int valRead = recv(telnetAccept, msg, maxLen, 0);
+            int valRead = recv(telnetSock, msg, maxLen, 0);
             struct message newMsg;
             char buff[0];
             buff[0] = '\0';
@@ -253,6 +255,7 @@ int main(int argc, char *argv[])
                 break;
             }
         }
+        //3
         if (FD_ISSET(serverSock, &readfds)) 
         {
             struct message messStruct;
@@ -273,7 +276,7 @@ int main(int argc, char *argv[])
                         break;
                     }
 
-                    i = send(telnetAccept, buff, length, 0);
+                    i = send(telnetSock, buff, length, 0);
 
                     if (i != 0)
                     {
@@ -295,10 +298,10 @@ int main(int argc, char *argv[])
                 break;
             }
         }
-        if (FD_ISSET(telnetSock, &readfds))
+        if (FD_ISSET(telnetAccept, &readfds))
         {
-            close(telnetAccept);
-            if ((telnetAccept = accept(telnetSock, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
+            close(telnetSock);
+            if ((telnetSock = accept(telnetAccept, (struct sockaddr *)&telnetAddr, (socklen_t*)&telnetAddrLen))<0) 
             {
                 perror("accept");
                 return 1;
@@ -310,7 +313,7 @@ int main(int argc, char *argv[])
             reconnectStruct.type = NEW_CONN_TYPE;
             printf("New Connection made.\n");
             sendStruct(serverSock, &reconnectStruct);
-            int socketList[] = {serverSock, telnetAccept, telnetSock};
+            int socketList[] = {serverSock, telnetSock, telnetAccept};
             int max = -1;
             int i;
             for (i = 0; i < 3; i++)
@@ -347,8 +350,8 @@ int main(int argc, char *argv[])
     }
 
     close(serverSock);
-    close(telnetSock);
     close(telnetAccept);
+    close(telnetSock);
 
     return 0;
 }
